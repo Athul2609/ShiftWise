@@ -23,6 +23,9 @@ class OffRequest(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     date = models.IntegerField()
 
+    class Meta:
+        unique_together = ('doctor', 'date')
+
     def __str__(self):
         return f'Off request for {self.doctor.name} on {self.date}'
 

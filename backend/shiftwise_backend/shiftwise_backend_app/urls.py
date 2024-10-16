@@ -11,7 +11,8 @@ from .views import (
     OffRequestCreateView, 
     OffRequestListView, 
     OffRequestByDateView, 
-    # OffRequestDeleteView
+    OffRequestDeleteView,
+    RosterView
 )
 
 urlpatterns = [
@@ -24,5 +25,6 @@ urlpatterns = [
     path('off-requests/create/', OffRequestCreateView.as_view(), name='create-off-request'),
     path('off-requests/', OffRequestListView.as_view(), name='list-off-requests'),
     path('off-requests/date/<int:date>/', OffRequestByDateView.as_view(), name='off-requests-by-date'),
-    # path('off-requests/delete/<int:pk>/', OffRequestDeleteView.as_view(), name='delete-off-request'),
+    path('off-requests/<int:doctor_id>/<int:date>/', OffRequestDeleteView.as_view(), name='offrequest-delete'),
+    path('roster/', RosterView.as_view(), name='roster-view'),
 ]
