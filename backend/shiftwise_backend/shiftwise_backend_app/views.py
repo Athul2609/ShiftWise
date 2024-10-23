@@ -1,16 +1,20 @@
 # shiftwise_backend_app/views.py
 
 from rest_framework import generics, status
-from .models import Doctor, Team, OffRequest
+from .models import Doctor, Team, OffRequest, OTP
 from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer
 from rest_framework.response import Response
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from rest_framework.views import APIView
+from django.core.mail import send_mail
+from django.utils import timezone
+from rest_framework.decorators import api_view
 
+import random
+import string
 import sys
 import os
 
-# Add the path to the `algorithm` directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../algorithm')))
 
 from main import main
@@ -29,13 +33,13 @@ class DoctorListView(generics.ListAPIView):
 class DoctorUpdateView(generics.UpdateAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
-    lookup_field = 'doctor_id'  # Use doctor_id to identify the doctor
+    lookup_field = 'doctor_id' 
 
 # API to delete a doctor
 class DoctorDeleteView(generics.DestroyAPIView):
     queryset = Doctor.objects.all()
     serializer_class = DoctorSerializer
-    lookup_field = 'doctor_id'  # Use doctor_id to identify the doctor
+    lookup_field = 'doctor_id' 
 
 
 # API to create multiple teams
@@ -75,25 +79,20 @@ class OffRequestDeleteView(generics.DestroyAPIView):
     serializer_class = OffRequestSerializer
 
     def get_object(self):
-        # Get the doctor ID and date from the URL parameters
         doctor_id = self.kwargs.get('doctor_id')
         date = self.kwargs.get('date')
         
-        # Fetch the object based on doctor and date
         try:
             return OffRequest.objects.get(doctor_id=doctor_id, date=date)
         except OffRequest.DoesNotExist:
-            # Return a 404 error if the object does not exist
             raise Http404("Off request not found.")
 
 class RosterView(APIView):
 
     def get(self, request):
-        # Fetch teams and off requests from the database
         teams_queryset = Team.objects.select_related('doctor').all()
         off_requests_queryset = OffRequest.objects.select_related('doctor').all()
 
-        # Format teams into the specified structure
         teams = []
         team_dict = {}
         
@@ -106,7 +105,6 @@ class RosterView(APIView):
                 team_dict[team_id]=len(teams)-1
             teams[team_dict[team_id]].append(doctor_id)
             
-        # Format off requests into the specified structure
         off_requests = {}
         
         for off_request in off_requests_queryset:
@@ -117,7 +115,87 @@ class RosterView(APIView):
                 off_requests[doctor_id] = []
             off_requests[doctor_id].append(date)
 
-        # Call the main function to get the roster
         roster = main(teams, off_requests)
 
         return Response(roster)
+
+# Utility function to generate a random OTP
+def generate_otp():
+    return ''.join(random.choices(string.digits, k=6))
+
+@api_view(['POST'])
+def send_otp(request):
+    email = request.data.get('email')
+    
+    # Check if doctor exists
+    try:
+        doctor = Doctor.objects.get(email=email)
+    except Doctor.DoesNotExist:
+        return JsonResponse({'error': 'Doctor with this email not found'}, status=404)
+    
+    # Generate OTP
+    otp = generate_otp()
+
+    # Remove any previous OTPs for this doctor
+    OTP.objects.filter(doctor=doctor).delete()
+
+    # Save the new OTP with timestamp
+    OTP.objects.create(doctor=doctor, otp=otp, timestamp=timezone.now())
+
+    # Send the OTP via email (configure email settings in settings.py)
+    send_mail(
+        'Your OTP Code',
+        f'Your OTP code is {otp}',
+        'athul.srinivas.2003@gmail.com',  # sender's email
+        [doctor.email],  # receiver's email
+        fail_silently=False,
+    )
+
+    return JsonResponse({'message': 'OTP sent to your email'}, status=200)
+
+import jwt
+from datetime import datetime, timedelta
+from django.conf import settings
+
+# Function to generate JWT token
+def generate_jwt(doctor):
+    payload = {
+        'doctor_id': doctor.doctor_id,
+        'exp': datetime.utcnow() + timedelta(hours=1),  # Token expiration time
+        'iat': datetime.utcnow(),
+    }
+    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+    return token
+
+@api_view(['POST'])
+def verify_otp(request):
+    email = request.data.get('email')
+    otp_input = request.data.get('otp')
+
+    # Check if doctor exists
+    try:
+        doctor = Doctor.objects.get(email=email)
+    except Doctor.DoesNotExist:
+        return JsonResponse({'error': 'Doctor with this email not found'}, status=404)
+    
+    # Check if OTP exists and is valid
+    try:
+        otp_record = OTP.objects.get(doctor=doctor)
+    except OTP.DoesNotExist:
+        return JsonResponse({'error': 'OTP not found'}, status=400)
+
+    # Check OTP validity and expiration (e.g., OTP valid for 10 minutes)
+    if otp_record.otp != otp_input:
+        return JsonResponse({'error': 'Invalid OTP'}, status=400)
+
+    otp_age = timezone.now() - otp_record.timestamp
+    if otp_age.total_seconds() > 600:  # 600 seconds = 10 minutes
+        return JsonResponse({'error': 'OTP expired'}, status=400)
+
+    # OTP is valid, generate JWT token
+    token = generate_jwt(doctor)
+
+    # Delete the used OTP
+    otp_record.delete()
+
+    return JsonResponse({'token': token}, status=200)

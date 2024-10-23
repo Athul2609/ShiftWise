@@ -12,7 +12,9 @@ from .views import (
     OffRequestListView, 
     OffRequestByDateView, 
     OffRequestDeleteView,
-    RosterView
+    RosterView,
+    send_otp, 
+    verify_otp
 )
 
 urlpatterns = [
@@ -27,4 +29,6 @@ urlpatterns = [
     path('off-requests/date/<int:date>/', OffRequestByDateView.as_view(), name='off-requests-by-date'),
     path('off-requests/<int:doctor_id>/<int:date>/', OffRequestDeleteView.as_view(), name='offrequest-delete'),
     path('roster/', RosterView.as_view(), name='roster-view'),
+    path('send-otp/', send_otp, name='send_otp'),
+    path('verify-otp/', verify_otp, name='verify_otp'),
 ]
