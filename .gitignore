@@ -5,3 +5,15 @@ outputs/
 .vscode/
 
 algorithm/Notes.md
+
+backend/shiftwise_backend/shiftwise_backend/.env
+
+*.pyc
+
+backend/shiftwise_backend/shiftwise_backend/__pycache__/
+
+backend/shiftwise_backend/shiftwise_backend_app/__pycache__/
+
+algorithm/__pycache__/
+
+/backend/shiftwise_backend/shiftwise_backend_app/migrations/__pycache__/
