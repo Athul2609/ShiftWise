@@ -1,28 +1,24 @@
 # shiftwise_backend_app/views.py
 
-from rest_framework import generics, status
-from .models import Doctor, Team, OffRequest, OTP
-from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer
-from rest_framework.response import Response
-from django.http import Http404, JsonResponse
-from rest_framework.views import APIView
+import os
+import sys
+
+from django.conf import settings
 from django.core.mail import send_mail
+from django.http import Http404, JsonResponse
 from django.utils import timezone
+from rest_framework import generics, status
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from .authentication import verify_jwt
+from .models import Doctor, Team, OffRequest, OTP
+from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer
+from .utils import generate_jwt,generate_otp
 
-import random
-import string
-import sys
-import os
-
-import jwt
-from datetime import datetime, timedelta
-from django.conf import settings
-
+# Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../algorithm')))
-
 from main import main
 
 # API to create a new doctor
@@ -65,14 +61,18 @@ class TeamListView(generics.ListAPIView):
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
 
+
+# API to create off request
 class OffRequestCreateView(generics.CreateAPIView):
     queryset = OffRequest.objects.all()
     serializer_class = OffRequestSerializer
 
+# API to view off request
 class OffRequestListView(generics.ListAPIView):
     queryset = OffRequest.objects.all()
     serializer_class = OffRequestSerializer
 
+# API to view off request by date
 class OffRequestByDateView(generics.ListAPIView):
     serializer_class = OffRequestSerializer
 
@@ -89,6 +89,7 @@ class OffRequestByDateView(generics.ListAPIView):
 
         return super().get(request, *args, **kwargs)
 
+# API to delete off request
 class OffRequestDeleteView(generics.DestroyAPIView):
     queryset = OffRequest.objects.all()
     serializer_class = OffRequestSerializer
@@ -102,6 +103,8 @@ class OffRequestDeleteView(generics.DestroyAPIView):
         except OffRequest.DoesNotExist:
             raise Http404("Off request not found.")
 
+
+# API to generate roster
 class RosterView(APIView):
 
     def get(self, request):
@@ -134,9 +137,6 @@ class RosterView(APIView):
 
         return Response(roster)
 
-# Utility function to generate a random OTP
-def generate_otp():
-    return ''.join(random.choices(string.digits, k=6))
 
 @api_view(['POST'])
 def send_otp(request):
@@ -167,16 +167,6 @@ def send_otp(request):
     )
 
     return JsonResponse({'message': 'OTP sent to your email'}, status=200)
-
-# Function to generate JWT token
-def generate_jwt(doctor):
-    payload = {
-        'doctor_id': doctor.doctor_id,
-        'exp': datetime.utcnow() + timedelta(hours=1),  # Token expiration time
-        'iat': datetime.utcnow(),
-    }
-    token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-    return token
 
 @api_view(['POST'])
 def verify_otp(request):
