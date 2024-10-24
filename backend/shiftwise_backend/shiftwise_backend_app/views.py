@@ -10,10 +10,16 @@ from django.core.mail import send_mail
 from django.utils import timezone
 from rest_framework.decorators import api_view
 
+from .authentication import verify_jwt
+
 import random
 import string
 import sys
 import os
+
+import jwt
+from datetime import datetime, timedelta
+from django.conf import settings
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../algorithm')))
 
@@ -73,6 +79,15 @@ class OffRequestByDateView(generics.ListAPIView):
     def get_queryset(self):
         date = self.kwargs['date']
         return OffRequest.objects.filter(date=date)
+    
+        
+    def get(self, request, *args, **kwargs):
+        doctor_id = verify_jwt(request)
+
+        if doctor_id is None: 
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+
+        return super().get(request, *args, **kwargs)
 
 class OffRequestDeleteView(generics.DestroyAPIView):
     queryset = OffRequest.objects.all()
@@ -153,10 +168,6 @@ def send_otp(request):
 
     return JsonResponse({'message': 'OTP sent to your email'}, status=200)
 
-import jwt
-from datetime import datetime, timedelta
-from django.conf import settings
-
 # Function to generate JWT token
 def generate_jwt(doctor):
     payload = {
@@ -195,7 +206,15 @@ def verify_otp(request):
     # OTP is valid, generate JWT token
     token = generate_jwt(doctor)
 
-    # Delete the used OTP
-    otp_record.delete()
+    # Set the cookie with the JWT token
+    response = JsonResponse({'message': 'OTP verified successfully', 'token': token}, status=200)
+    response.set_cookie(
+        key='jwt',          # Name of the cookie
+        value=token,       # The JWT token to be stored
+        httponly=True,     # Prevents JavaScript access
+        secure=True,       # Use this in production to ensure it’s sent over HTTPS
+        samesite='Lax',    # Adjust according to your CSRF policy
+        expires=timezone.now() + timezone.timedelta(days=1)  # Optional expiration
+    )
 
-    return JsonResponse({'token': token}, status=200)
+    return response
