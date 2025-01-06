@@ -7,6 +7,60 @@ from utils import *
 random.seed(12)
 
 def initialise_docs_info(teams,off_requests):
+    """
+    Initialize doc_info for all doctors in the provided teams.
+
+    This function creates a dictionary containing doc_info for 
+    each doctor.
+
+    Args:
+        teams (list of list of str): A 2D list where each inner list represents a team, 
+                                     and each element in the inner list is a doctor's name.
+        off_requests (dict): A dictionary where keys are doctor names, and values are lists 
+                             of days in the month that the doctor has requested off.
+
+    Returns:
+        dict: A dictionary where each key is a doctor's name, and the value is another 
+              dictionary containing the following fields:
+              - "total_no_of_shifts" (int): Total number of shifts assigned.
+              - "no_of_consecutive_working_days" (int): Number of consecutive working days.
+              - "no_of_consecutive_night_shifts" (int): Number of consecutive night shifts.
+              - "no_of_night_shifts" (int): Total number of night shifts.
+              - "no_of_day_shifts" (int): Total number of day shifts.
+              - "no_of_working_sundays" (int): Total number of Sundays worked.
+              - "no_of_working_saturday" (int): Total number of Saturdays worked.
+              - "no_of_consecutive_offs" (int): Number of consecutive off days.
+              - "worked_last_shift" (bool): Whether the doctor worked the last shift.
+              - "off_requested" (list): Days of the month the doctor has requested off.
+
+    Example:
+        teams = [["Dr. Smith", "Dr. Jones"], ["Dr. Patel", "Dr. Lee"]]
+        off_requests = {
+            "Dr. Smith": [1, 15],
+            "Dr. Lee": [10, 20]
+        }
+
+        docs_info = initialise_docs_info(teams, off_requests)
+
+        # Result:
+        # {
+        #     "Dr. Smith": {
+        #         "total_no_of_shifts": 0,
+        #         "no_of_consecutive_working_days": 0,
+        #         "no_of_consecutive_night_shifts": 0,
+        #         "no_of_night_shifts": 0,
+        #         "no_of_day_shifts": 0,
+        #         "no_of_working_sundays": 0,
+        #         "no_of_working_saturday": 0,
+        #         "no_of_consecutive_offs": 0,
+        #         "worked_last_shift": False,
+        #         "off_requested": [1, 15]
+        #     },
+        #     "Dr. Jones": {
+        #         ...
+        #     }
+        # }
+    """
     docs_info={}
     for team in teams:
         for doctor in team:
@@ -25,6 +79,46 @@ def initialise_docs_info(teams,off_requests):
     return docs_info
 
 def initialise_docs_info_histroy(num_days,teams):
+    """
+    Initialize a historical tracking structure for doc_info.
+
+    This function creates a nested dictionary to store daily doc_info
+    for each doctor over a specified number of days in the 
+    scheduling month. Each doctor has a dictionary(to store doc_info) for each day and their shifts.
+
+    Args:
+        num_days (int): The number of days in the scheduling month.
+        teams (list of list of str): A 2D list where each inner list represents a team, 
+                                     and each element in the inner list is a doctor's name.
+
+    Returns:
+        dict: A dictionary where each key is a doctor's name, and the value is another 
+              dictionary with keys representing the days of the month (0-indexed). 
+              Each day's value is an empty dictionary, ready to store information.
+
+    Example:
+        num_days = 30
+        teams = [["Dr. Smith", "Dr. Jones"], ["Dr. Patel", "Dr. Lee"]]
+
+        docs_info_history = initialise_docs_info_history(num_days, teams)
+
+        # Result:
+        # {
+        #     "Dr. Smith": {
+        #         0: {},
+        #         1: {},
+        #         ...
+        #         29: {}
+        #     },
+        #     "Dr. Jones": {
+        #         0: {},
+        #         1: {},
+        #         ...
+        #         29: {}
+        #     },
+        #     ...
+        # }
+    """
     docs_info_history={}
     for team in teams:
         for doctor in team:

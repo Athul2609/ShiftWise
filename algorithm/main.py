@@ -88,8 +88,8 @@ if __name__ =="__main__":
 
     off_requests={}
 
-    scheduling_month, num_days, scheduling_year = (11, 30, 2024)
+    scheduling_month, num_days, scheduling_year=get_scheduling_info()
 
-    roster=main(teams,off_requests,scheduling_month, num_days, scheduling_year)
+    roster=main(teams,off_requests)
 
     create_shift_schedule_excel(roster,scheduling_month,scheduling_year)
