@@ -3,8 +3,8 @@ from stage_two_roster import create_stage_two_roster
 from utils import create_shift_schedule_excel
 from utils import get_scheduling_info
 
-def main(teams,off_requests):
-    scheduling_month, num_days, scheduling_year=get_scheduling_info()
+def main(teams,off_requests, scheduling_month, num_days, scheduling_year):
+    # scheduling_month, num_days, scheduling_year=get_scheduling_info()
     docs_info,docs_info_history,roster=create_stage_one_roster(teams, off_requests,scheduling_month, num_days, scheduling_year)
     if not roster:
         return None
@@ -83,13 +83,29 @@ if __name__ =="__main__":
         ["Dr. A", "Dr. B", "Dr. C","Dr. D"],
         ["Dr. E", "Dr. F", "Dr. G","Dr. H"],
         ["Dr. I", "Dr. J", "Dr. K","Dr. L"],
-        ["Dr. M", "Dr. N", "Dr. O","Dr. P"],
+        ["Dr. M", "Dr. N", "Dr. O","Dr. P", "extra"],
     ]
 
-    off_requests={}
+    off_requests={"Dr. A": [3, 4, 5],
+                  "Dr. B": [13, 14, 15],
+                  "Dr. C": [25, 26, 27],
+                  "Dr. D": [10,11,24,25],
+                  "Dr. E": [1,2,3],
+                  "Dr. F": [25,26,27],
+                  "Dr. G": [14,19,20],
+                  "Dr. H": [29,30,31],
+                  "Dr. I": [13,14,15],
+                  "Dr. J": [10,11,12],
+                  "Dr. K": [29, 30, 31],
+                  "Dr. L": [12,13,14],
+                  "Dr. M": [5,6,7],
+                  "Dr. N": [1,15,20],
+                  "Dr. O": [2, 9, 24],
+                  "Dr. P": [6,13,27]
+                  }
 
     scheduling_month, num_days, scheduling_year=get_scheduling_info()
 
-    roster=main(teams,off_requests)
+    roster=main(teams,off_requests, scheduling_month, num_days, scheduling_year)
 
     create_shift_schedule_excel(roster,scheduling_month,scheduling_year)
