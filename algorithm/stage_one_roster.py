@@ -74,7 +74,8 @@ def initialise_docs_info(teams,off_requests):
                 "no_of_working_saturday":0,
                 "no_of_consecutive_offs":0,
                 "worked_last_shift":False,
-                "off_requested":off_requests[doctor] if doctor in off_requests else [],
+                "off_requested":off_requests[doctor]["off_dates"] if doctor in off_requests else [],
+                "no_of_leaves":off_requests[doctor]["no_of_leaves"] if doctor in off_requests else 0,
             }
     return docs_info
 
@@ -196,7 +197,7 @@ def generate_pick_score(doc_info, day, shift, scheduling_month, scheduling_year)
     
     pick_score+=doc_info["no_of_consecutive_offs"]
 
-    pick_score+=len(doc_info["off_requested"])
+    pick_score+=len(doc_info["off_requested"])-(doc_info["no_of_leaves"]/2)
 
     return pick_score
 
