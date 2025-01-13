@@ -3,8 +3,8 @@ from stage_two_roster import create_stage_two_roster
 from utils import create_shift_schedule_excel
 from utils import get_scheduling_info
 
-def main(teams,off_requests, scheduling_month, num_days, scheduling_year):
-    # scheduling_month, num_days, scheduling_year=get_scheduling_info()
+def main(teams,off_requests):
+    scheduling_month, num_days, scheduling_year=get_scheduling_info()
     docs_info,docs_info_history,roster=create_stage_one_roster(teams, off_requests,scheduling_month, num_days, scheduling_year)
     if not roster:
         return None
@@ -111,6 +111,6 @@ if __name__ =="__main__":
 
     scheduling_month, num_days, scheduling_year=get_scheduling_info()
 
-    roster=main(teams,off_requests, scheduling_month, num_days, scheduling_year)
+    roster=main(teams,off_requests)
 
     create_shift_schedule_excel(roster,scheduling_month,scheduling_year)
