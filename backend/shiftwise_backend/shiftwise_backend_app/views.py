@@ -19,7 +19,7 @@ from .utils import generate_jwt,generate_otp
 
 # Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../algorithm')))
-from main import main
+from main import generate_full_month_roster
 
 # API to create a new doctor
 class DoctorCreateView(generics.CreateAPIView):
@@ -133,7 +133,7 @@ class RosterView(APIView):
                 off_requests[doctor_id] = []
             off_requests[doctor_id].append(date)
 
-        roster = main(teams, off_requests)
+        roster = generate_full_month_roster(teams, off_requests)
 
         return Response(roster)
 

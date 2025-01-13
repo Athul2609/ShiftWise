@@ -6,7 +6,7 @@ import copy
 from utils import *
 random.seed(12)
 
-def initialise_docs_info(teams,off_requests):
+def initialise_docs_info(teams,doctor_input_details):
     """
     Initialize doc_info for all doctors in the provided teams.
 
@@ -16,7 +16,7 @@ def initialise_docs_info(teams,off_requests):
     Args:
         teams (list of list of str): A 2D list where each inner list represents a team, 
                                      and each element in the inner list is a doctor's name.
-        off_requests (dict): A dictionary where keys are doctor names, and values are lists 
+        doctor_input_details (dict): A dictionary where keys are doctor names, and values are lists 
                              of days in the month that the doctor has requested off.
 
     Returns:
@@ -66,16 +66,16 @@ def initialise_docs_info(teams,off_requests):
         for doctor in team:
             docs_info[doctor]={
                 "total_no_of_shifts":0,
-                "no_of_consecutive_working_days":0,
-                "no_of_consecutive_night_shifts":0,
+                "no_of_consecutive_working_days":doctor_input_details[doctor]["no_of_consecutive_working_days"], #take previous
+                "no_of_consecutive_night_shifts":doctor_input_details[doctor]["no_of_consecutive_night_shifts"], #take previous
                 "no_of_night_shifts":0,
                 "no_of_day_shifts":0,
                 "no_of_working_sundays":0,
                 "no_of_working_saturday":0,
-                "no_of_consecutive_offs":0,
-                "worked_last_shift":False,
-                "off_requested":off_requests[doctor]["off_dates"] if doctor in off_requests else [],
-                "no_of_leaves":off_requests[doctor]["no_of_leaves"] if doctor in off_requests else 0,
+                "no_of_consecutive_offs":doctor_input_details[doctor]["no_of_consecutive_offs"], #take previous
+                "worked_last_shift":doctor_input_details[doctor]["worked_last_shift"], #take previous
+                "off_requested":doctor_input_details[doctor]["off_dates"],
+                "no_of_leaves":doctor_input_details[doctor]["no_of_leaves"]
             }
     return docs_info
 
@@ -245,11 +245,11 @@ def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shif
         docs_info[doctor]=doc_info
     return docs_info,docs_info_history
 
-def create_stage_one_roster(teams, off_requests,scheduling_month, num_days, scheduling_year):
+def create_stage_one_roster(teams, doctor_input_details,scheduling_month, num_days, scheduling_year):
     # scheduling_month, num_days, scheduling_year = get_scheduling_info()
     # scheduling_month, num_days, scheduling_year = (12, 31, 2024)
     roster={}
-    docs_info=initialise_docs_info(teams,off_requests)
+    docs_info=initialise_docs_info(teams,doctor_input_details)
     docs_info_history=initialise_docs_info_histroy(num_days,teams)
     for day in range(num_days):
         temp={}

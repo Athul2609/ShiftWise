@@ -6,7 +6,33 @@ import os
 
 random.seed(12)
 
-def get_scheduling_info():
+def get_next_half_month_info():
+    today = datetime.date.today()
+    
+    if today.month == 12 and today.date > 15:
+        scheduling_month = 1
+        scheduling_year = today.year + 1
+        scheduling_half = 1
+    else:
+        scheduling_year = today.year
+        if today.date < 15:
+            scheduling_half=2
+            scheduling_month=today.month
+        else:
+            scheduling_half=1
+            scheduling_month = today.month + 1
+
+    # Find the number of days in the scheduling month
+    num_days = calendar.monthrange(scheduling_year, scheduling_month)[1]
+
+    if scheduling_half==1:
+        num_days=15
+    else:
+        num_days-=15
+
+    return scheduling_half, scheduling_month, num_days, scheduling_year
+
+def get_next_month_scheduling_info():
     """
     Calculate scheduling information for the next month.
 

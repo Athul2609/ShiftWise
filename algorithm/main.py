@@ -1,15 +1,19 @@
 from stage_one_roster import create_stage_one_roster
 from stage_two_roster import create_stage_two_roster
 from utils import create_shift_schedule_excel
-from utils import get_scheduling_info
+from utils import get_next_month_scheduling_info, get_next_half_month_info
 
-def main(teams,off_requests):
-    scheduling_month, num_days, scheduling_year=get_scheduling_info()
-    docs_info,docs_info_history,roster=create_stage_one_roster(teams, off_requests,scheduling_month, num_days, scheduling_year)
+def generate_full_month_roster(teams,doctor_input_details):
+    scheduling_month, num_days, scheduling_year=get_next_month_scheduling_info()
+    docs_info,docs_info_history,roster=create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year)
     if not roster:
         return None
-    roster=create_stage_two_roster(teams, off_requests,scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster)
+    roster=create_stage_two_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster)
     return roster
+
+def generate_half_month_roster(teams,doctor_input_details):
+    scheduling_half, scheduling_month, num_days, scheduling_year = get_next_half_month_info()
+    docs_info,docs_info_history,roster=create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year)
 
 def main_test():
     # Possible configurations for teams
@@ -111,6 +115,6 @@ if __name__ =="__main__":
 
     scheduling_month, num_days, scheduling_year=get_scheduling_info()
 
-    roster=main(teams,off_requests)
+    roster=generate_full_month_roster(teams,off_requests)
 
     create_shift_schedule_excel(roster,scheduling_month,scheduling_year)
