@@ -86,7 +86,6 @@ def get_next_shift(day,shift, max_days,step =1):
         return -1,-1
     return day,shift
 
-
 def create_shift_schedule_excel(schedule_data, month, year, output_folder="../outputs"):
     # Ensure the output folder exists
     if not os.path.exists(output_folder):

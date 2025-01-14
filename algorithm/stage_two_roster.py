@@ -1,8 +1,8 @@
 from stage_one_roster import *
 import math
 
-def verify_min_shift_criteria(doc_info):
-    min_criteria=17
+def verify_min_shift_criteria(doc_info, scheduling_half):
+    min_criteria=17 if scheduling_half != 1 else 7
     min_criteria=math.ceil(min_criteria/2)-1
     if(doc_info["total_no_of_shifts"]<min_criteria):
         return False
@@ -82,14 +82,14 @@ def check_eligible_future(doc_info,doc_info_history ,day, shift, num_days):
             return False
     return True
 
-def create_stage_two_roster(teams, off_requests,scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster):
+def create_stage_two_roster(teams, off_requests,scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster, scheduling_half=0):
     # backtracking to meet minimum work requirements
     dates_with_extra_doctor={}
     while True:
         doc_working_options={}
         for team in teams:
             for doctor in team:
-                if not verify_min_shift_criteria(docs_info[doctor]):
+                if not verify_min_shift_criteria(docs_info[doctor], scheduling_half):
                     doc_working_options[doctor]=generate_working_options(doctor,docs_info_history[doctor],docs_info[doctor],roster,scheduling_month,scheduling_year,num_days)
         doc_working_options = dict(sorted(doc_working_options.items(), key=lambda item: len(item[1])))
         for doctor in doc_working_options:
@@ -109,4 +109,4 @@ def create_stage_two_roster(teams, off_requests,scheduling_month, num_days, sche
                     break
         if not doc_working_options:
             break
-    return roster
+    return roster, docs_info

@@ -79,7 +79,7 @@ def initialise_docs_info(teams,doctor_input_details):
             }
     return docs_info
 
-def initialise_docs_info_histroy(num_days,teams):
+def initialise_docs_info_histroy(num_days,teams, second_half=False):
     """
     Initialize a historical tracking structure for doc_info.
 
@@ -124,7 +124,7 @@ def initialise_docs_info_histroy(num_days,teams):
     for team in teams:
         for doctor in team:
             docs_info_history[doctor]={}
-            for day in range(num_days):
+            for day in range(15*second_half,num_days+(15*second_half)):
                 docs_info_history[doctor][day]={}
     return docs_info_history
 
@@ -245,13 +245,14 @@ def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shif
         docs_info[doctor]=doc_info
     return docs_info,docs_info_history
 
-def create_stage_one_roster(teams, doctor_input_details,scheduling_month, num_days, scheduling_year):
+def create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year, scheduling_half=1, docs_info=None):
     # scheduling_month, num_days, scheduling_year = get_scheduling_info()
     # scheduling_month, num_days, scheduling_year = (12, 31, 2024)
     roster={}
-    docs_info=initialise_docs_info(teams,doctor_input_details)
-    docs_info_history=initialise_docs_info_histroy(num_days,teams)
-    for day in range(num_days):
+    second_half=True if scheduling_half==2 else False
+    docs_info=docs_info if docs_info else initialise_docs_info(teams,doctor_input_details)
+    docs_info_history=initialise_docs_info_histroy(num_days,teams,second_half)
+    for day in range((scheduling_half-1)*15,num_days+((scheduling_half-1)*15)):
         temp={}
         for shift in ["day","night"]:
             temp[shift]=[]
