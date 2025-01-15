@@ -1,7 +1,7 @@
 # shiftwise_backend_app/serializers.py
 
 from rest_framework import serializers
-from .models import Doctor, Team, OffRequest
+from .models import Doctor, Team, OffRequest, Roster
 
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,3 +33,8 @@ class OffRequestSerializer(serializers.ModelSerializer):
             'date',
             'type',
         ]
+
+class RosterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Roster
+        fields = ['date', 'day_shift_doctors', 'night_shift_doctors']

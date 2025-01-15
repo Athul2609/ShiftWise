@@ -207,5 +207,6 @@ if __name__ =="__main__":
     # roster=generate_full_month_roster_half_by_half(teams_first_half, teams_second_half, doctor_input_details)
 
     roster=generate_full_month_roster(teams, doctor_input_details)
+    print(roster)
 
     create_shift_schedule_excel(roster,scheduling_month,scheduling_year)

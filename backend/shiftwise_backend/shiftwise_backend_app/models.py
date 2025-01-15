@@ -47,4 +47,11 @@ class OffRequest(models.Model):
 
     def __str__(self):
         return f'Off request for {self.doctor.name} on {self.date}'
+    
+class Roster(models.Model):
+    date = models.IntegerField()
+    day_shift_doctors = models.JSONField(default=list)
+    night_shift_doctors = models.JSONField(default=list)
 
+    def __str__(self):
+        return f"Roster for {self.date}"
