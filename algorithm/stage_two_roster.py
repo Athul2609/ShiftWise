@@ -1,7 +1,10 @@
 from stage_one_roster import *
+import math
 
-def verify_min_shift_criteria(doc_info):
-    if(doc_info["total_no_of_shifts"]<17):
+def verify_min_shift_criteria(doc_info, scheduling_half):
+    min_criteria=17 if scheduling_half != 1 else 7
+    min_criteria=math.ceil(min_criteria/2)-1
+    if(doc_info["total_no_of_shifts"]<min_criteria):
         return False
     return True
 
@@ -21,7 +24,8 @@ def generate_working_options(doctor,doc_info_history,doc_info,roster,scheduling_
                     "no_of_working_saturday":doc_info["no_of_working_saturday"],
                     "no_of_consecutive_offs":doc_info_history[day][shift]["no_of_consecutive_offs"],
                     "worked_last_shift":doc_info_history[day][shift]["worked_last_shift"],
-                    "off_requested":doc_info["off_requested"]
+                    "off_requested":doc_info["off_requested"],
+                    "no_of_leaves":doc_info["no_of_leaves"]
                 }
                 if check_eligible(modified_doc_info,day,shift,scheduling_month,scheduling_year) and check_eligible_future(modified_doc_info,doc_info_history,day,shift,num_days):
                     working_options.append([day,shift])
@@ -78,18 +82,21 @@ def check_eligible_future(doc_info,doc_info_history ,day, shift, num_days):
             return False
     return True
 
-def create_stage_two_roster(teams, off_requests,scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster):
+def create_stage_two_roster(teams, off_requests,scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster, scheduling_half=0):
     # backtracking to meet minimum work requirements
-    dates_with_extra_doctor={1:[],2:[],3:[],4:[],5:[]} #temporary hardcoding
+    dates_with_extra_doctor={}
     while True:
         doc_working_options={}
         for team in teams:
             for doctor in team:
-                if not verify_min_shift_criteria(docs_info[doctor]):
+                if not verify_min_shift_criteria(docs_info[doctor], scheduling_half):
                     doc_working_options[doctor]=generate_working_options(doctor,docs_info_history[doctor],docs_info[doctor],roster,scheduling_month,scheduling_year,num_days)
         doc_working_options = dict(sorted(doc_working_options.items(), key=lambda item: len(item[1])))
         for doctor in doc_working_options:
-            for number_of_rep in range(1, len(dates_with_extra_doctor)):
+            number_of_rep=0
+            while True:
+                number_of_rep+=1
+                dates_with_extra_doctor[number_of_rep]=[]
                 option_set=[]
                 for i in doc_working_options[doctor]:
                     if i not in dates_with_extra_doctor[number_of_rep]:
@@ -102,4 +109,4 @@ def create_stage_two_roster(teams, off_requests,scheduling_month, num_days, sche
                     break
         if not doc_working_options:
             break
-    return roster
+    return roster, docs_info

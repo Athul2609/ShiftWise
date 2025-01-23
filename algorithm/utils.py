@@ -6,7 +6,45 @@ import os
 
 random.seed(12)
 
-def get_scheduling_info():
+def get_next_half_month_info():
+    today = datetime.date.today()
+    
+    if today.month == 12 and today.date > 15:
+        scheduling_month = 1
+        scheduling_year = today.year + 1
+        scheduling_half = 1
+    else:
+        scheduling_year = today.year
+        if today.date < 15:
+            scheduling_half=2
+            scheduling_month=today.month
+        else:
+            scheduling_half=1
+            scheduling_month = today.month + 1
+
+    # Find the number of days in the scheduling month
+    num_days = calendar.monthrange(scheduling_year, scheduling_month)[1]
+
+    if scheduling_half==1:
+        num_days=15
+    else:
+        num_days-=15
+
+    return scheduling_half, scheduling_month, num_days, scheduling_year
+
+def get_next_month_scheduling_info():
+    """
+    Calculate scheduling information for the next month.
+
+    This function determines the month, year, and number of days 
+    in the next calendar month relative to the current date.
+
+    Returns:
+        tuple: A tuple containing:
+            - scheduling_month (int): The month number of the next month (1 = January, ..., 12 = December).
+            - num_days (int): The number of days in the next month.
+            - scheduling_year (int): The year of the next month.
+    """
     # Get the current date
     today = datetime.date.today()
 
@@ -48,8 +86,7 @@ def get_next_shift(day,shift, max_days,step =1):
         return -1,-1
     return day,shift
 
-
-def create_shift_schedule_excel(schedule_data, month, year, output_folder="outputs"):
+def create_shift_schedule_excel(schedule_data, month, year, output_folder="../outputs"):
     # Ensure the output folder exists
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
