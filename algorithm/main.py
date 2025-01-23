@@ -9,7 +9,7 @@ def generate_full_month_roster(teams,doctor_input_details):
     if not roster:
         return None
     roster, docs_info=create_stage_two_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster)
-    return roster
+    return roster, docs_info
 
 def generate_half_month_roster(teams,doctor_input_details, scheduling_half, scheduling_month, num_days, scheduling_year, docs_info=None):
     #scheduling_half, scheduling_month, num_days, scheduling_year = (1,1,15,2025)#get_next_half_month_info()
@@ -23,7 +23,7 @@ def generate_full_month_roster_half_by_half(teams_first_half, teams_second_half,
     scheduling_month, num_days, scheduling_year=get_next_month_scheduling_info()
     roster_first_half, docs_info = generate_half_month_roster(teams_first_half, doctor_input_details, 1, scheduling_month, 15, scheduling_year)
     roster_second_half, docs_info = generate_half_month_roster(teams_second_half, doctor_input_details, 2, scheduling_month, num_days-15, scheduling_year, docs_info)
-    return {**roster_first_half,**roster_second_half}
+    return {**roster_first_half,**roster_second_half}, docs_info
 
 
 if __name__ =="__main__":
