@@ -8,6 +8,7 @@ class DoctorSerializer(serializers.ModelSerializer):
         model = Doctor
         fields = [
             'doctor_id',
+            'role',
             'name',
             'email',
             'no_of_consecutive_working_days',

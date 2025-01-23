@@ -15,7 +15,7 @@ from .views import (
     RosterView,
     RosterListView,
     send_otp, 
-    verify_otp
+    verify_otp,
 )
 
 urlpatterns = [

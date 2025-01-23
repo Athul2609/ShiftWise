@@ -110,7 +110,8 @@ class RosterView(APIView):
     def get(self, request):
         roster_type = request.data.get('type', 'default')
 
-        if type=="full":
+        if roster_type=="full":
+            print("we are inside type full")
             teams_queryset = Team.objects.select_related('doctor').all()
             off_requests_queryset = OffRequest.objects.select_related('doctor').all()
 
@@ -140,11 +141,10 @@ class RosterView(APIView):
             for off_request in off_requests_queryset:
                 doctor_id = off_request.doctor.doctor_id
                 date = off_request.date
-                
                 doctor_input_details[doctor_id]["off_dates"].append(date)
-                doctor_input_details[doctor_id]["off_dates"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
+                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
 
-            roster = generate_full_month_roster(teams, doctor_input_details)
+            roster, docs_info = generate_full_month_roster(teams, doctor_input_details)
         else:
             first_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=1)
             second_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=2)
@@ -189,10 +189,31 @@ class RosterView(APIView):
                 date = off_request.date
                 
                 doctor_input_details[doctor_id]["off_dates"].append(date)
-                doctor_input_details[doctor_id]["off_dates"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
+                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
             
-            roster=generate_full_month_roster_half_by_half(first_half_teams, second_half_teams, doctor_input_details)
-        
+            roster, docs_info=generate_full_month_roster_half_by_half(first_half_teams, second_half_teams, doctor_input_details)
+        Roster.objects.all().delete()
+        # Team.objects.all().delete()
+        # OffRequest.objects.all().delete()
+
+        for doctor_id, details in docs_info.items():
+            try:
+                # Get the doctor instance by name
+                doctor = Doctor.objects.get(doctor_id=doctor_id)
+                
+                # Update the fields using the nested dictionary
+                doctor.no_of_consecutive_working_days = details.get("no_of_consecutive_working_days", doctor.no_of_consecutive_working_days)
+                doctor.no_of_consecutive_night_shifts = details.get("no_of_consecutive_night_shifts", doctor.no_of_consecutive_night_shifts)
+                doctor.no_of_consecutive_offs = details.get("no_of_consecutive_offs", doctor.no_of_consecutive_offs)
+                doctor.worked_last_shift = details.get("worked_last_shift", doctor.worked_last_shift)
+                
+                # Save the updated doctor instance
+                doctor.save()
+                
+                # print(f"Updated {doctor_id}'s details successfully.")
+            except Doctor.DoesNotExist:
+                print(f"Doctor {doctor_id} does not exist.")
+
         for date, shifts in roster.items():
             day_shift_doctors = shifts.get('day', [])
             night_shift_doctors = shifts.get('night', [])

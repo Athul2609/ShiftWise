@@ -6,6 +6,7 @@ from django.utils import timezone
 
 class Doctor(models.Model):
     doctor_id = models.AutoField(primary_key=True)
+    role=models.IntegerField(default=0)
     name = models.CharField(max_length=100)
     email = models.EmailField(unique=True)
     no_of_consecutive_working_days = models.IntegerField(default=0)

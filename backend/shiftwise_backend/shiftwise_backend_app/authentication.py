@@ -10,7 +10,7 @@ def verify_jwt(request):
 
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
-        return payload['doctor_id']
+        return payload['doctor_id'], payload['role']
     except jwt.ExpiredSignatureError:
         return JsonResponse({'error': 'Token expired'}, status=401)
     except jwt.InvalidTokenError:

@@ -13,6 +13,7 @@ def generate_otp():
 def generate_jwt(doctor):
     payload = {
         'doctor_id': doctor.doctor_id,
+        'role':doctor.role,
         'exp': datetime.utcnow() + timedelta(hours=1),  # Token expiration time
         'iat': datetime.utcnow(),
     }
