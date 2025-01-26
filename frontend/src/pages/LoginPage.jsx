@@ -1,23 +1,57 @@
-import React, { useState } from "react";
-import axios from "axios";
-import { useRouter } from "next/router";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import React, { useState, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../App"; // Import AuthContext
+
+// Local reusable components
+const Card = ({ children, className }) => (
+  <div className={`bg-white shadow rounded-lg ${className}`}>{children}</div>
+);
+
+const CardContent = ({ children }) => <div className="p-4">{children}</div>;
+
+const Button = ({ children, onClick, className }) => (
+  <button
+    onClick={onClick}
+    className={`py-2 px-4 rounded-lg font-semibold ${className}`}
+  >
+    {children}
+  </button>
+);
+
+const Input = ({ id, type, value, onChange, placeholder, className }) => (
+  <input
+    id={id}
+    type={type}
+    value={value}
+    onChange={onChange}
+    placeholder={placeholder}
+    className={`py-2 px-3 border rounded-lg ${className}`}
+  />
+);
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
+  const { login } = useContext(AuthContext); // Use AuthContext
+  const navigate = useNavigate();
 
   const sendOtp = async () => {
     try {
       setError("");
-      const response = await axios.post("http://127.0.0.1:8000/api/send-otp/", { email });
-      if (response.status === 200) {
+      const response = await fetch("http://127.0.0.1:8000/api/send-otp/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.ok) {
         setOtpSent(true);
+      } else {
+        throw new Error("Failed to send OTP");
       }
     } catch (err) {
       setError("Failed to send OTP. Please try again.");
@@ -27,9 +61,19 @@ const LoginPage = () => {
   const verifyOtp = async () => {
     try {
       setError("");
-      const response = await axios.post("http://127.0.0.1:8000/api/verify-otp/", { email, otp });
-      if (response.status === 200) {
-        router.push("/");
+      const response = await fetch("http://127.0.0.1:8000/api/verify-otp/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, otp }),
+      });
+
+      if (response.ok) {
+        login(); // Call login function from AuthContext
+        navigate("/");
+      } else {
+        throw new Error("Invalid OTP");
       }
     } catch (err) {
       setError("Invalid OTP. Please try again.");
