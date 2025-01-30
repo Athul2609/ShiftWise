@@ -4,7 +4,7 @@ import { AuthContext } from "../App"; // Import AuthContext
 
 // Local reusable components
 const Card = ({ children, className }) => (
-  <div className={`bg-white shadow rounded-lg ${className}`}>{children}</div>
+  <div className={`bg-[#E2DAD6] shadow rounded-lg ${className}`}>{children}</div>
 );
 
 const CardContent = ({ children }) => <div className="p-4">{children}</div>;
@@ -81,10 +81,10 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F5EDED]">
-      <Card className="w-full max-w-md p-6 rounded-2xl shadow-lg">
+    <div className="min-h-screen flex items-center justify-center bg-[#7FA1C3] font-outfit">
+      <Card className="w-full max-w-md p-6 rounded-2xl shadow-lg ">
         <CardContent>
-          <h1 className="text-2xl font-bold text-[#6482AD] text-center mb-6">Login</h1>
+          <h1 className="text-2xl font-bold text-[#6482AD] text-center mb-6 ">Login</h1>
 
           <div className="mb-4">
             <label htmlFor="email" className="block text-sm font-medium text-[#7FA1C3] mb-2">
@@ -96,7 +96,7 @@ const LoginPage = () => {
               placeholder="Enter your email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full border-[#E2DAD6] focus:ring-[#6482AD]"
+              className="w-full border-[#E2DAD6] focus:ring-[#6482AD] bg-[#F5EDED]"
             />
           </div>
 
