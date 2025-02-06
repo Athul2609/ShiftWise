@@ -27,12 +27,13 @@ const useAuth = () => useContext(AuthContext);
 
 // Protected Route Component
 const ProtectedRoute = ({ element, ...rest }) => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth(); // we can just call the proposed api here
 
   return isAuthenticated ? (
     element
   ) : (
     <Navigate to="/login" replace />
+    // element
   );
 };
 
@@ -40,7 +41,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
-        <Navbar doctorRole={0} />
+        <Navbar doctorRole={2} />
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute element={<HomePage />} />} />

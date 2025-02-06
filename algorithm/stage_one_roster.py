@@ -153,7 +153,7 @@ def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weeke
         if doc_info["no_of_day_shifts"] >= 10:
             return False
 
-    if day in doc_info["off_requested"]:
+    if day+1 in doc_info["off_requested"]:
         return False
 
     if not weekend_relaxation:
