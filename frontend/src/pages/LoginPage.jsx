@@ -30,17 +30,26 @@ const Input = ({ id, type, value, onChange, placeholder, className }) => (
   />
 );
 
+const LoadingScreen = () => (
+  <div className="flex items-center justify-center space-x-2">
+    <div className="w-6 h-6 border-4 border-t-transparent border-blue-500 rounded-full animate-spin font-outfit"></div>
+    <span>Sending OTP...</span>
+  </div>
+);
+
 const LoginPage = () => {
   const [email, setEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // New loading state
   const { login } = useContext(AuthContext); // Use AuthContext
   const navigate = useNavigate();
 
   const sendOtp = async () => {
     try {
       setError("");
+      setLoading(true); // Set loading state to true
       const response = await fetch("http://127.0.0.1:8000/api/send-otp/", {
         method: "POST",
         headers: {
@@ -56,6 +65,8 @@ const LoginPage = () => {
       }
     } catch (err) {
       setError("Failed to send OTP. Please try again.");
+    } finally {
+      setLoading(false); // Reset loading state
     }
   };
 
@@ -74,7 +85,7 @@ const LoginPage = () => {
         const errorData = await response.json();
         throw new Error(errorData.message || "Invalid OTP");
       }
-  
+
       const data = await response.json();
       const token = data.token; // Get token from response
 
@@ -83,6 +94,14 @@ const LoginPage = () => {
       navigate("/");
     } catch (err) {
       setError("Invalid OTP. Please try again.");
+    }
+  };
+
+  const handleOtpChange = (e) => {
+    const input = e.target.value;
+    // Only allow digits and ensure OTP length is 6 digits
+    if (/^\d{0,6}$/.test(input)) {
+      setOtp(input);
     }
   };
 
@@ -116,7 +135,7 @@ const LoginPage = () => {
                 type="text"
                 placeholder="6-digit OTP"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value)}
+                onChange={handleOtpChange} // Updated to handle OTP input change
                 className="w-full border-[#E2DAD6] focus:ring-[#6482AD]"
               />
             </div>
@@ -124,7 +143,9 @@ const LoginPage = () => {
 
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-          {!otpSent ? (
+          {loading ? (  // Show loading screen if OTP is being sent
+            <LoadingScreen />
+          ) : !otpSent ? (
             <Button
               onClick={sendOtp}
               className="w-full bg-[#6482AD] text-white hover:bg-[#7FA1C3]"
