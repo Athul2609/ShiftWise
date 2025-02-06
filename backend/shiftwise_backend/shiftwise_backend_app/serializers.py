@@ -27,13 +27,11 @@ class TeamSerializer(serializers.ModelSerializer):
         ] 
 
 class OffRequestSerializer(serializers.ModelSerializer):
+    doctor_name = serializers.CharField(source='doctor.name', read_only=True)
+
     class Meta:
         model = OffRequest
-        fields = [
-            'doctor',
-            'date',
-            'type',
-        ]
+        fields = ['doctor', 'doctor_name', 'date', 'type']
 
 class RosterSerializer(serializers.ModelSerializer):
     class Meta:

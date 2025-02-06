@@ -79,15 +79,16 @@ class OffRequestByDateView(generics.ListAPIView):
     def get_queryset(self):
         date = self.kwargs['date']
         return OffRequest.objects.filter(date=date)
-    
-        
+
     def get(self, request, *args, **kwargs):
-        doctor_id = verify_jwt(request)
+        # Remove the authentication check for now
+        # doctor_id = verify_jwt(request)
 
-        if doctor_id is None: 
-            return JsonResponse({'error': 'Authentication required'}, status=401)
-
+        # If you still want to return a response for unauthenticated users, 
+        # you can skip the authentication block.
+        # For now, we will directly call the parent class's get method.
         return super().get(request, *args, **kwargs)
+
 
 # API to delete off request
 class OffRequestDeleteView(generics.DestroyAPIView):

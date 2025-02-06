@@ -116,3 +116,42 @@ def create_shift_schedule_excel(schedule_data, month, year, output_folder="../ou
     # Save the DataFrame to an Excel file
     df.to_excel(output_file, index=False)
     print(f"Shift schedule saved to {output_file}")
+
+
+def dict_to_excel(data, filename="shift_data.xlsx"):
+    """
+    Converts a nested dictionary into a formatted Excel file for user-friendly viewing.
+    
+    :param data: Dictionary containing shift details per person.
+    :param filename: Name of the output Excel file (default: "shift_data.xlsx").
+    """
+    # Convert dictionary to DataFrame
+    df = pd.DataFrame.from_dict(data, orient='index')
+    
+    # Remove unwanted columns
+    print(df)
+    columns_to_remove = ["no_of_consecutive_working_days", "no_of_consecutive_night_shifts", "no_of_consecutive_offs", "worked_last_shift", "off_requested", "no_of_leaves"]
+    df.drop(columns=columns_to_remove, inplace=True, errors='ignore')
+    print(df)
+    
+    # Convert boolean values to Yes/No for better readability
+    df.replace({True: "Yes", False: "No"}, inplace=True)
+    
+    # Write to Excel with formatting
+    with pd.ExcelWriter(filename, engine='openpyxl') as writer:
+        df.to_excel(writer, sheet_name="Shift Data")
+        
+        # Adjust column width for readability
+        workbook = writer.book
+        worksheet = writer.sheets["Shift Data"]
+        for col in worksheet.columns:
+            max_length = 0
+            col_letter = col[0].column_letter  # Get column letter
+            for cell in col:
+                try:
+                    max_length = max(max_length, len(str(cell.value)))
+                except:
+                    pass
+            worksheet.column_dimensions[col_letter].width = max_length + 2
+    
+    print(f"Excel file '{filename}' has been created successfully.")
