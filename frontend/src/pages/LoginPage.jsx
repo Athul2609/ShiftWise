@@ -1,5 +1,6 @@
 import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import { AuthContext } from "../App"; // Import AuthContext
 
 // Local reusable components
@@ -69,12 +70,17 @@ const LoginPage = () => {
         body: JSON.stringify({ email, otp }),
       });
 
-      if (response.ok) {
-        login(); // Call login function from AuthContext
-        navigate("/");
-      } else {
-        throw new Error("Invalid OTP");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Invalid OTP");
       }
+  
+      const data = await response.json();
+      const token = data.token; // Get token from response
+
+      Cookies.set("jwt", token, { expires: 1 }); // Store token in cookies
+      login(token); // Pass token to login function
+      navigate("/");
     } catch (err) {
       setError("Invalid OTP. Please try again.");
     }
