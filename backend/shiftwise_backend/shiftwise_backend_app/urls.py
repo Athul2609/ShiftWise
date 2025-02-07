@@ -14,11 +14,15 @@ from .views import (
     OffRequestDeleteView,
     RosterView,
     RosterListView,
+    AlgoPlanListView,
+    AlgoPlanCreateView,
     send_otp, 
     verify_otp,
 )
 
 urlpatterns = [
+    path('algoplan/', AlgoPlanListView.as_view(), name='algoplan-list'),
+    path('algoplan/create/', AlgoPlanCreateView.as_view(), name='algoplan-create'),
     path('doctors/', DoctorListView.as_view(), name='doctor-list'),
     path('doctors/create/', DoctorCreateView.as_view(), name='doctor-create'),
     path('doctors/<int:doctor_id>/', DoctorUpdateView.as_view(), name='doctor-update'),

@@ -1,8 +1,14 @@
 import { useEffect, useState } from "react";
 
 export default function TeamManagement() {
+  const [done,setDone] = useState();
+
   const [algo,setAlgo] = useState();
   const [doctors, setDoctors] = useState([]);
+
+  const currentDate = new Date();
+  const [month,setMonth] = useState(currentDate.getMonth() + 1);
+  const [year,setYear] = useState(currentDate.getFullYear());
 
   const [teams, setTeams] = useState({ "Team 1": [] });
   const [teamsFH, setTeamsFH] = useState({ "Team 1": [] });
@@ -21,6 +27,11 @@ export default function TeamManagement() {
   const [showDoctorDropdownSH, setShowDoctorDropdownSH] = useState(false);
 
   useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/algoplan/")
+    .then((response) => response.json())
+    .then((data) => setDone(data))
+    .catch((error) => console.error("Error fetching doctors:", error));
+
     fetch("http://127.0.0.1:8000/api/doctors/")
       .then((response) => response.json())
       .then((data) => setDoctors(data))
@@ -91,20 +102,41 @@ export default function TeamManagement() {
   };
 
   const submitTeams = () => {
-    const formattedTeams = Object.entries(teams).flatMap(([teamId, doctors]) =>
-      doctors.map((doctor) => ({ team_id: teamId, doctor: doctor.doctor_id, scheduling_half: 0 }))
-    );
-    fetch("http://127.0.0.1:8000/api/teams/create/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formattedTeams),
-    })
-      .then((response) => response.json())
+      const formatTeams = (teams, schedulingHalf) => 
+        Object.entries(teams).flatMap(([teamId, doctors]) => 
+          doctors.map(({ doctor_id }) => ({ team_id: teamId, doctor: doctor_id, scheduling_half: schedulingHalf }))
+        );
+        
+      const submitAlgoPlan = async () =>
+      {
+        try {
+          await fetch("http://127.0.0.1:8000/api/algoplan/create/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({month: month, year: year, algorithm:algo}),
+          });
+        } catch (error) {
+          console.error("Error submitting algoPlan:", error);
+        }
+      }
+      const submitTeams = async (teamsData) => {
+        try {
+          await fetch("http://127.0.0.1:8000/api/teams/create/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(teamsData),
+          });
+        } catch (error) {
+          console.error("Error submitting teams:", error);
+        }
+      };
+
+      Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teams, 0))])
       .then(() => {
         alert("Teams submitted successfully!");
         window.location.reload();
       })
-      .catch((error) => console.error("Error submitting teams:", error));
+      .catch(() => console.error("Error submitting teams"));
   };
 
   const submitTeamsHalf = () => {
@@ -112,7 +144,19 @@ export default function TeamManagement() {
       Object.entries(teams).flatMap(([teamId, doctors]) => 
         doctors.map(({ doctor_id }) => ({ team_id: teamId, doctor: doctor_id, scheduling_half: schedulingHalf }))
       );
-  
+      
+    const submitAlgoPlan = async () =>
+    {
+      try {
+        await fetch("http://127.0.0.1:8000/api/algoplan/create/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({month: month-1, year: year, algorithm:algo}),
+        });
+      } catch (error) {
+        console.error("Error submitting algoPlan:", error);
+      }
+    }
     const submitTeams = async (teamsData) => {
       try {
         await fetch("http://127.0.0.1:8000/api/teams/create/", {
@@ -125,7 +169,7 @@ export default function TeamManagement() {
       }
     };
   
-    Promise.all([submitTeams(formatTeams(teamsFH, 1)), submitTeams(formatTeams(teamsSH, 2))])
+    Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teamsFH, 1)), submitTeams(formatTeams(teamsSH, 2))])
       .then(() => {
         alert("Teams submitted successfully!");
         window.location.reload();
@@ -134,24 +178,53 @@ export default function TeamManagement() {
   };
   
 
-  return algo === "Full" ?
+  return (done && done.length !== 0) ?
+  <div className="flex flex-col items-center justify-center h-screen bg-[#7FA1C3]">
+    <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month+1}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
+  </div>
+  :
+  (algo === "full" ?
   (
     <div className="flex flex-col items-center h-screen bg-[#7FA1C3]">
       <div className=" p-4 rounded-xl border-none">
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">ALGORITHM</h2>
       <div className="flex rounded-xl overflow-hidden border-none">
         <button
-          className={`px-6 py-2 ${algo ==="Full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Full")}
+          className={`px-6 py-2 ${algo ==="full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("full")}
         >
           FULL
         </button>
         <button
-          className={`px-6 py-2 ${algo ==="Half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Half")}
+          className={`px-6 py-2 ${algo ==="half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("half")}
         >
           HALF
         </button>
+      </div>
+      <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
+        <div>
+          <label className="block text-[#F5EDED] font-medium">MONTH</label>
+          <input
+            type="number"
+            min="1"
+            max="12"
+            value={month}
+            onChange={(e) => setMonth(parseInt(e.target.value) || 1)}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[#F5EDED] font-medium">YEAR</label>
+          <input
+            type="number"
+            min="1900"
+            max="2100"
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value) || currentDate.getFullYear())}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
       </div>
       {/* <p className="text-center mt-4">Selected: <span className="font-bold">{algo}</span></p> */}
       </div>
@@ -229,17 +302,41 @@ export default function TeamManagement() {
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">ALGORITHM</h2>
       <div className="flex rounded-xl overflow-hidden border-none">
         <button
-          className={`px-6 py-2 ${algo ==="Full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Full")}
+          className={`px-6 py-2 ${algo ==="full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("full")}
         >
           FULL
         </button>
         <button
-          className={`px-6 py-2 ${algo ==="Half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Half")}
+          className={`px-6 py-2 ${algo ==="half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("half")}
         >
           HALF
         </button>
+      </div>
+      <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
+        <div>
+          <label className="block text-[#F5EDED] font-medium">MONTH</label>
+          <input
+            type="number"
+            min="1"
+            max="12"
+            value={month}
+            onChange={(e) => setMonth(parseInt(e.target.value) || 1)}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[#F5EDED] font-medium">YEAR</label>
+          <input
+            type="number"
+            min="1900"
+            max="2100"
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value) || currentDate.getFullYear())}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
       </div>
       {/* <p className="text-center mt-4">Selected: <span className="font-bold">{algo}</span></p> */}
       </div>
@@ -376,5 +473,5 @@ export default function TeamManagement() {
         </>
       }
     </div>
-  );
+  ))
 }
