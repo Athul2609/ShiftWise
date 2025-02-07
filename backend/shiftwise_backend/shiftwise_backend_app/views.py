@@ -13,13 +13,21 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authentication import verify_jwt
-from .models import Doctor, Team, OffRequest, OTP, Roster
-from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer, RosterSerializer
+from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan
+from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer, RosterSerializer, AlgoPlanSerializer
 from .utils import generate_jwt,generate_otp
 
 # Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../algorithm')))
 from main import generate_full_month_roster, generate_full_month_roster_half_by_half
+
+class AlgoPlanCreateView(generics.CreateAPIView):
+    queryset = AlgoPlan.objects.all()
+    serializer_class = AlgoPlanSerializer
+
+class AlgoPlanListView(generics.ListAPIView):
+    queryset = AlgoPlan.objects.all()
+    serializer_class = AlgoPlanSerializer
 
 # API to create a new doctor
 class DoctorCreateView(generics.CreateAPIView):
@@ -194,8 +202,9 @@ class RosterView(APIView):
             
             roster, docs_info=generate_full_month_roster_half_by_half(first_half_teams, second_half_teams, doctor_input_details)
         Roster.objects.all().delete()
-        # Team.objects.all().delete()
-        # OffRequest.objects.all().delete()
+        Team.objects.all().delete()
+        OffRequest.objects.all().delete()
+        AlgoPlan.objects.all().delete()
 
         for doctor_id, details in docs_info.items():
             try:

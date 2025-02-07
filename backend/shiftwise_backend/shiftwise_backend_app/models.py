@@ -56,3 +56,20 @@ class Roster(models.Model):
 
     def __str__(self):
         return f"Roster for {self.date}"
+
+class AlgoPlan(models.Model):
+    ALGORITHM_CHOICES = [
+        ('full', 'Full'),
+        ('half', 'Half'),
+    ]
+    
+    month = models.PositiveSmallIntegerField()
+    year = models.PositiveIntegerField()
+    algorithm = models.CharField(max_length=4, choices=ALGORITHM_CHOICES)
+
+    class Meta:
+        unique_together = ('month', 'year', 'algorithm')
+
+    
+    def __str__(self):
+        return f"{self.get_algorithm_display()} - {self.month}/{self.year}"

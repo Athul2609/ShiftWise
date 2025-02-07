@@ -1,14 +1,37 @@
 import { useEffect, useState } from "react";
 
 export default function TeamManagement() {
+  const [done,setDone] = useState();
+
   const [algo,setAlgo] = useState();
   const [doctors, setDoctors] = useState([]);
+
+  const currentDate = new Date();
+  const [month,setMonth] = useState(currentDate.getMonth() + 1);
+  const [year,setYear] = useState(currentDate.getFullYear());
+
   const [teams, setTeams] = useState({ "Team 1": [] });
+  const [teamsFH, setTeamsFH] = useState({ "Team 1": [] });
+  const [teamsSH, setTeamsSH] = useState({ "Team 1": [] });
+
   const [selectedTeam, setSelectedTeam] = useState("Team 1");
+  const [selectedTeamFH, setSelectedTeamFH] = useState("Team 1");
+  const [selectedTeamSH, setSelectedTeamSH] = useState("Team 1");
+
   const [assignedDoctors, setAssignedDoctors] = useState(new Set());
+  const [assignedDoctorsFH, setAssignedDoctorsFH] = useState(new Set());
+  const [assignedDoctorsSH, setAssignedDoctorsSH] = useState(new Set());
+
   const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
+  const [showDoctorDropdownFH, setShowDoctorDropdownFH] = useState(false);
+  const [showDoctorDropdownSH, setShowDoctorDropdownSH] = useState(false);
 
   useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/algoplan/")
+    .then((response) => response.json())
+    .then((data) => setDone(data))
+    .catch((error) => console.error("Error fetching doctors:", error));
+
     fetch("http://127.0.0.1:8000/api/doctors/")
       .then((response) => response.json())
       .then((data) => setDoctors(data))
@@ -18,6 +41,14 @@ export default function TeamManagement() {
   const addTeam = () => {
     const teamId = `Team ${Object.keys(teams).length + 1}`;
     setTeams({ ...teams, [teamId]: [] });
+  };
+  const addTeamFH = () => {
+    const teamId = `Team ${Object.keys(teamsFH).length + 1}`;
+    setTeamsFH({ ...teamsFH, [teamId]: [] });
+  };
+  const addTeamSH = () => {
+    const teamId = `Team ${Object.keys(teamsSH).length + 1}`;
+    setTeamsSH({ ...teamsSH, [teamId]: [] });
   };
 
   const assignDoctor = (doctor) => {
@@ -29,6 +60,24 @@ export default function TeamManagement() {
     setAssignedDoctors(new Set([...assignedDoctors, doctor.doctor_id]));
     setShowDoctorDropdown(false);
   };
+  const assignDoctorFH = (doctor) => {
+    if (!selectedTeamFH || assignedDoctorsFH.has(doctor.doctor_id)) return;
+    setTeamsFH({
+      ...teamsFH,
+      [selectedTeamFH]: [...teamsFH[selectedTeamFH], doctor],
+    });
+    setAssignedDoctorsFH(new Set([...assignedDoctorsFH, doctor.doctor_id]));
+    setShowDoctorDropdownFH(false);
+  };
+  const assignDoctorSH = (doctor) => {
+    if (!selectedTeamSH || assignedDoctorsSH.has(doctor.doctor_id)) return;
+    setTeamsSH({
+      ...teamsSH,
+      [selectedTeamSH]: [...teamsSH[selectedTeamSH], doctor],
+    });
+    setAssignedDoctorsSH(new Set([...assignedDoctorsSH, doctor.doctor_id]));
+    setShowDoctorDropdownSH(false);
+  };
 
   const removeDoctor = (doctorId) => {
     setTeams({
@@ -37,39 +86,145 @@ export default function TeamManagement() {
     });
     setAssignedDoctors(new Set([...assignedDoctors].filter((id) => id !== doctorId)));
   };
-
-  const submitTeams = () => {
-    const formattedTeams = Object.entries(teams).flatMap(([teamId, doctors]) =>
-      doctors.map((doctor) => ({ team_id: teamId, doctor: doctor.doctor_id, scheduling_half: 0 }))
-    );
-    fetch("http://127.0.0.1:8000/api/teams/create/", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(formattedTeams),
-    })
-      .then((response) => response.json())
-      .then(() => alert("Teams submitted successfully!"))
-      .catch((error) => console.error("Error submitting teams:", error));
+  const removeDoctorFH = (doctorId) => {
+    setTeamsFH({
+      ...teamsFH,
+      [selectedTeamFH]: teamsFH[selectedTeamFH].filter((doc) => doc.doctor_id !== doctorId),
+    });
+    setAssignedDoctorsFH(new Set([...assignedDoctorsFH].filter((id) => id !== doctorId)));
+  };
+  const removeDoctorSH = (doctorId) => {
+    setTeamsSH({
+      ...teamsSH,
+      [selectedTeamSH]: teamsSH[selectedTeamSH].filter((doc) => doc.doctor_id !== doctorId),
+    });
+    setAssignedDoctorsSH(new Set([...assignedDoctorsSH].filter((id) => id !== doctorId)));
   };
 
-  return algo === "Full" ?
+  const submitTeams = () => {
+      const formatTeams = (teams, schedulingHalf) => 
+        Object.entries(teams).flatMap(([teamId, doctors]) => 
+          doctors.map(({ doctor_id }) => ({ team_id: teamId, doctor: doctor_id, scheduling_half: schedulingHalf }))
+        );
+        
+      const submitAlgoPlan = async () =>
+      {
+        try {
+          await fetch("http://127.0.0.1:8000/api/algoplan/create/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({month: month, year: year, algorithm:algo}),
+          });
+        } catch (error) {
+          console.error("Error submitting algoPlan:", error);
+        }
+      }
+      const submitTeams = async (teamsData) => {
+        try {
+          await fetch("http://127.0.0.1:8000/api/teams/create/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(teamsData),
+          });
+        } catch (error) {
+          console.error("Error submitting teams:", error);
+        }
+      };
+
+      Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teams, 0))])
+      .then(() => {
+        alert("Teams submitted successfully!");
+        window.location.reload();
+      })
+      .catch(() => console.error("Error submitting teams"));
+  };
+
+  const submitTeamsHalf = () => {
+    const formatTeams = (teams, schedulingHalf) => 
+      Object.entries(teams).flatMap(([teamId, doctors]) => 
+        doctors.map(({ doctor_id }) => ({ team_id: teamId, doctor: doctor_id, scheduling_half: schedulingHalf }))
+      );
+      
+    const submitAlgoPlan = async () =>
+    {
+      try {
+        await fetch("http://127.0.0.1:8000/api/algoplan/create/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({month: month-1, year: year, algorithm:algo}),
+        });
+      } catch (error) {
+        console.error("Error submitting algoPlan:", error);
+      }
+    }
+    const submitTeams = async (teamsData) => {
+      try {
+        await fetch("http://127.0.0.1:8000/api/teams/create/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(teamsData),
+        });
+      } catch (error) {
+        console.error("Error submitting teams:", error);
+      }
+    };
+  
+    Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teamsFH, 1)), submitTeams(formatTeams(teamsSH, 2))])
+      .then(() => {
+        alert("Teams submitted successfully!");
+        window.location.reload();
+      })
+      .catch(() => console.error("Error submitting one or more team submissions"));
+  };
+  
+
+  return (done && done.length !== 0) ?
+  <div className="flex flex-col items-center justify-center h-screen bg-[#7FA1C3]">
+    <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month+1}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
+  </div>
+  :
+  (algo === "full" ?
   (
     <div className="flex flex-col items-center h-screen bg-[#7FA1C3]">
       <div className=" p-4 rounded-xl border-none">
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">ALGORITHM</h2>
       <div className="flex rounded-xl overflow-hidden border-none">
         <button
-          className={`px-6 py-2 ${algo ==="Full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Full")}
+          className={`px-6 py-2 ${algo ==="full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("full")}
         >
           FULL
         </button>
         <button
-          className={`px-6 py-2 ${algo ==="Half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Half")}
+          className={`px-6 py-2 ${algo ==="half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("half")}
         >
           HALF
         </button>
+      </div>
+      <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
+        <div>
+          <label className="block text-[#F5EDED] font-medium">MONTH</label>
+          <input
+            type="number"
+            min="1"
+            max="12"
+            value={month}
+            onChange={(e) => setMonth(parseInt(e.target.value) || 1)}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[#F5EDED] font-medium">YEAR</label>
+          <input
+            type="number"
+            min="1900"
+            max="2100"
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value) || currentDate.getFullYear())}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
       </div>
       {/* <p className="text-center mt-4">Selected: <span className="font-bold">{algo}</span></p> */}
       </div>
@@ -147,147 +302,176 @@ export default function TeamManagement() {
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">ALGORITHM</h2>
       <div className="flex rounded-xl overflow-hidden border-none">
         <button
-          className={`px-6 py-2 ${algo ==="Full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Full")}
+          className={`px-6 py-2 ${algo ==="full"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("full")}
         >
           FULL
         </button>
         <button
-          className={`px-6 py-2 ${algo ==="Half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
-          onClick={() => setAlgo("Half")}
+          className={`px-6 py-2 ${algo ==="half"? "bg-[#6482AD] text-[#F5EDED]" : "bg-[#F5EDED] text-[#6482AD]"} hover:bg-[#6482AD] hover:text-[#F5EDED]`}
+          onClick={() => setAlgo("half")}
         >
           HALF
         </button>
       </div>
+      <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
+        <div>
+          <label className="block text-[#F5EDED] font-medium">MONTH</label>
+          <input
+            type="number"
+            min="1"
+            max="12"
+            value={month}
+            onChange={(e) => setMonth(parseInt(e.target.value) || 1)}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
+        <div>
+          <label className="block text-[#F5EDED] font-medium">YEAR</label>
+          <input
+            type="number"
+            min="1900"
+            max="2100"
+            value={year}
+            onChange={(e) => setYear(parseInt(e.target.value) || currentDate.getFullYear())}
+            className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
+          />
+        </div>
+      </div>
       {/* <p className="text-center mt-4">Selected: <span className="font-bold">{algo}</span></p> */}
       </div>
-      <p>FIRST HALF</p>
-      <div className=" p-6 space-y-4 bg-[#7FA1C3] font-outfit">
-        <div className="flex space-x-4">
-          {Object.keys(teams).map((teamId) => (
-            <div
-              key={teamId}
-              onClick={() => setSelectedTeam(teamId)}
-              className={`p-4 cursor-pointer bg-[#F5EDED] rounded border ${
-                selectedTeam === teamId ? "border-[#6482AD]" : "border-gray-300"
-              }`}
-            >
-              <h2 className="text-lg font-bold text-[#6482AD]">{teamId}</h2>
-              {teams[teamId].map((doc) => (
+      { 
+        algo &&    
+        <>
+          <p>FIRST HALF</p>
+          <div className=" p-6 space-y-4 bg-[#7FA1C3] font-outfit">
+            <div className="flex space-x-4">
+              {Object.keys(teamsFH).map((teamId) => (
                 <div
-                  key={doc.doctor_id}
-                  className="flex justify-between items-center text-[#7FA1C3]"
+                  key={teamId}
+                  onClick={() => setSelectedTeamFH(teamId)}
+                  className={`p-4 cursor-pointer bg-[#F5EDED] rounded border ${
+                    selectedTeamFH === teamId ? "border-[#6482AD]" : "border-gray-300"
+                  }`}
                 >
-                  <p>{doc.name}</p>
-                  <button
-                    onClick={() => removeDoctor(doc.doctor_id)}
-                    className="text-gray-500 font-bold text-xs p-0 border-none bg-none cursor-pointer ml-1"
-                    aria-label={`Remove ${doc.doctor_name || "doctor"}`}
-                  >
-                    &#10060;
-                  </button>
+                  <h2 className="text-lg font-bold text-[#6482AD]">{teamId}</h2>
+                  {teamsFH[teamId].map((doc) => (
+                    <div
+                      key={doc.doctor_id}
+                      className="flex justify-between items-center text-[#7FA1C3]"
+                    >
+                      <p>{doc.name}</p>
+                      <button
+                        onClick={() => removeDoctorFH(doc.doctor_id)}
+                        className="text-gray-500 font-bold text-xs p-0 border-none bg-none cursor-pointer ml-1"
+                        aria-label={`Remove ${doc.doctor_name || "doctor"}`}
+                      >
+                        &#10060;
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ))}
+              <button onClick={addTeamFH} className="px-4 py-2  text-[#F5EDED] rounded">
+                + Team
+              </button>
             </div>
-          ))}
-          <button onClick={addTeam} className="px-4 py-2  text-[#F5EDED] rounded">
-            + Team
-          </button>
-        </div>
 
-        {showDoctorDropdown && (
-          <select
-            onChange={(e) =>
-              assignDoctor(doctors.find((d) => d.doctor_id == e.target.value))
-            }
-            className="mt-4 p-2 border rounded bg-white"
-          >
-            <option value="">Select Doctor</option>
-            {doctors
-              .filter((d) => !assignedDoctors.has(d.doctor_id))
-              .map((doc) => (
-                <option key={doc.doctor_id} value={doc.doctor_id}>
-                  {doc.name}
-                </option>
-              ))}
-          </select>
-        )}
+            {showDoctorDropdownFH && (
+              <select
+                onChange={(e) =>
+                  assignDoctorFH(doctors.find((d) => d.doctor_id == e.target.value))
+                }
+                className="mt-4 p-2 border rounded bg-white"
+              >
+                <option value="">Select Doctor</option>
+                {doctors
+                  .filter((d) => !assignedDoctorsFH.has(d.doctor_id))
+                  .map((doc) => (
+                    <option key={doc.doctor_id} value={doc.doctor_id}>
+                      {doc.name}
+                    </option>
+                  ))}
+              </select>
+            )}
 
-        <div className="flex space-x-4 mt-4"> {/* Container for buttons with spacing */}
-          <button
-            onClick={() => setShowDoctorDropdown(!showDoctorDropdown)}
-            className="px-4 py-2  text-[#F5EDED] rounded"
-          >
-            + Doctor
-          </button>
-        </div>
-      </div>
-      <p>SECOND HALF</p>
-      <div className=" p-6 space-y-4 bg-[#7FA1C3] font-outfit">
-        <div className="flex space-x-4">
-          {Object.keys(teams).map((teamId) => (
-            <div
-              key={teamId}
-              onClick={() => setSelectedTeam(teamId)}
-              className={`p-4 cursor-pointer bg-[#F5EDED] rounded border ${
-                selectedTeam === teamId ? "border-[#6482AD]" : "border-gray-300"
-              }`}
-            >
-              <h2 className="text-lg font-bold text-[#6482AD]">{teamId}</h2>
-              {teams[teamId].map((doc) => (
+            <div className="flex space-x-4 mt-4"> {/* Container for buttons with spacing */}
+              <button
+                onClick={() => setShowDoctorDropdownFH(!showDoctorDropdownFH)}
+                className="px-4 py-2  text-[#F5EDED] rounded"
+              >
+                + Doctor
+              </button>
+            </div>
+          </div>
+          <p>SECOND HALF</p>
+          <div className=" p-6 space-y-4 bg-[#7FA1C3] font-outfit">
+            <div className="flex space-x-4">
+              {Object.keys(teamsSH).map((teamId) => (
                 <div
-                  key={doc.doctor_id}
-                  className="flex justify-between items-center text-[#7FA1C3]"
+                  key={teamId}
+                  onClick={() => setSelectedTeamSH(teamId)}
+                  className={`p-4 cursor-pointer bg-[#F5EDED] rounded border ${
+                    selectedTeamSH === teamId ? "border-[#6482AD]" : "border-gray-300"
+                  }`}
                 >
-                  <p>{doc.name}</p>
-                  <button
-                    onClick={() => removeDoctor(doc.doctor_id)}
-                    className="text-gray-500 font-bold text-xs p-0 border-none bg-none cursor-pointer ml-1"
-                    aria-label={`Remove ${doc.doctor_name || "doctor"}`}
-                  >
-                    &#10060;
-                  </button>
+                  <h2 className="text-lg font-bold text-[#6482AD]">{teamId}</h2>
+                  {teamsSH[teamId].map((doc) => (
+                    <div
+                      key={doc.doctor_id}
+                      className="flex justify-between items-center text-[#7FA1C3]"
+                    >
+                      <p>{doc.name}</p>
+                      <button
+                        onClick={() => removeDoctorSH(doc.doctor_id)}
+                        className="text-gray-500 font-bold text-xs p-0 border-none bg-none cursor-pointer ml-1"
+                        aria-label={`Remove ${doc.doctor_name || "doctor"}`}
+                      >
+                        &#10060;
+                      </button>
+                    </div>
+                  ))}
                 </div>
               ))}
+              <button onClick={addTeamSH} className="px-4 py-2  text-[#F5EDED] rounded">
+                + Team
+              </button>
             </div>
-          ))}
-          <button onClick={addTeam} className="px-4 py-2  text-[#F5EDED] rounded">
-            + Team
-          </button>
-        </div>
 
-        {showDoctorDropdown && (
-          <select
-            onChange={(e) =>
-              assignDoctor(doctors.find((d) => d.doctor_id == e.target.value))
-            }
-            className="mt-4 p-2 border rounded bg-white"
-          >
-            <option value="">Select Doctor</option>
-            {doctors
-              .filter((d) => !assignedDoctors.has(d.doctor_id))
-              .map((doc) => (
-                <option key={doc.doctor_id} value={doc.doctor_id}>
-                  {doc.name}
-                </option>
-              ))}
-          </select>
-        )}
+            {showDoctorDropdownSH && (
+              <select
+                onChange={(e) =>
+                  assignDoctorSH(doctors.find((d) => d.doctor_id == e.target.value))
+                }
+                className="mt-4 p-2 border rounded bg-white"
+              >
+                <option value="">Select Doctor</option>
+                {doctors
+                  .filter((d) => !assignedDoctorsSH.has(d.doctor_id))
+                  .map((doc) => (
+                    <option key={doc.doctor_id} value={doc.doctor_id}>
+                      {doc.name}
+                    </option>
+                  ))}
+              </select>
+            )}
 
-        <div className="flex space-x-4 mt-4"> {/* Container for buttons with spacing */}
-          <button
-            onClick={() => setShowDoctorDropdown(!showDoctorDropdown)}
-            className="px-4 py-2  text-[#F5EDED] rounded"
-          >
-            + Doctor
-          </button>
-        </div>
-      </div>
-      <div className="mt-4"> {/* Container for submit button on a new line */}
-          <button onClick={submitTeams} className="px-4 py-2 bg-[#6482AD] text-white rounded">
-            SUBMIT
-          </button>
-      </div>
+            <div className="flex space-x-4 mt-4"> {/* Container for buttons with spacing */}
+              <button
+                onClick={() => setShowDoctorDropdownSH(!showDoctorDropdownSH)}
+                className="px-4 py-2  text-[#F5EDED] rounded"
+              >
+                + Doctor
+              </button>
+            </div>
+          </div>
+          <div className="mt-4"> {/* Container for submit button on a new line */}
+              <button onClick={submitTeamsHalf} className="px-4 py-2 bg-[#6482AD] text-white rounded">
+                SUBMIT
+              </button>
+          </div>
+        </>
+      }
     </div>
-  );
+  ))
 }
