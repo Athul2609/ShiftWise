@@ -3,6 +3,7 @@ import OffRequestList from "../components/OffRequestList";
 
 const Admin = () => {
   const [doctors, setDoctors] = useState([]);
+  const [done,setDone] = useState();
   const [editedDoctors, setEditedDoctors] = useState({});
   const [editMode, setEditMode] = useState(false);
   const [newDoctor, setNewDoctor] = useState({ name: "", email: "", no_of_consecutive_working_days: 0, no_of_consecutive_night_shifts: 0, no_of_consecutive_offs: 0, worked_last_shift: false });
@@ -11,11 +12,16 @@ const Admin = () => {
   const handleEdit = () => setEditMode(true);
 
 
-
   useEffect(() => {
+    fetch("http://127.0.0.1:8000/api/algoplan/")
+    .then((response) => response.json())
+    .then((data) => setDone(data))
+    .catch((error) => console.error("Error fetching doctors:", error));
+
     fetch("http://127.0.0.1:8000/api/doctors/")
-      .then((res) => res.json())
-      .then((data) => setDoctors(data));
+      .then((response) => response.json())
+      .then((data) => setDoctors(data))
+      .catch((error) => console.error("Error fetching doctors:", error));
   }, []);
 
   const handleInputChange = (doctorId, field, value) => {
@@ -253,10 +259,12 @@ const Admin = () => {
         <input type="email" placeholder="Enter Doctor Email" value={newDoctor.email} onChange={(e) => setNewDoctor({ ...newDoctor, email: e.target.value })} className="p-2 mr-2 rounded-lg bg-[#F5EDED]" />
         <button onClick={addDoctor} className="bg-[#6482AD] text-[#F5EDED] px-3 py-1 rounded">ADD</button>
       </div>
-
-      <h1 className="text-2xl font-semibold text-center mb-4 text-[#F5EDED]">LEAVE MANAGEMENT</h1>
-      <OffRequestList />
-      <button className="text-xl font-semibold text-center mb-4 text-[#6482AD] bg-[#F5EDED] px-3 py-1 rounded hover:text-[#F5EDED] hover:bg-[#6482AD]">GENERATE ROSTER</button>
+      {(done && done.length !== 0) &&
+          <>
+            <h1 className="text-2xl font-semibold text-center mb-4 text-[#F5EDED]">LEAVE MANAGEMENT</h1>
+            <OffRequestList />
+          </>
+      }
     </div>
   );
 };
