@@ -14,6 +14,7 @@ from .views import (
     OffRequestDeleteView,
     RosterView,
     RosterListView,
+    RosterGenerationCheckView,
     AlgoPlanListView,
     AlgoPlanCreateView,
     send_otp, 
@@ -35,6 +36,7 @@ urlpatterns = [
     path('off-requests/<int:doctor_id>/<int:date>/', OffRequestDeleteView.as_view(), name='offrequest-delete'),
     path('roster/generate/', RosterView.as_view(), name='roster-view'),
     path('roster/list/', RosterListView.as_view(), name='roster-list'),
+    path('roster/check/', RosterGenerationCheckView.as_view(), name='roster-check'),
     path('send-otp/', send_otp, name='send_otp'),
     path('verify-otp/', verify_otp, name='verify_otp'),
 ]

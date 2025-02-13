@@ -2,6 +2,8 @@
 
 import os
 import sys
+import calendar
+
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -117,9 +119,14 @@ class OffRequestDeleteView(generics.DestroyAPIView):
 class RosterView(APIView):
 
     def get(self, request):
-        roster_type = request.data.get('type', 'default')
+        algoplan = AlgoPlan.objects.first()  # Assumes there is always one row
 
-        if roster_type=="full":
+        if algoplan:
+            scheduling_month = algoplan.month
+            scheduling_year = algoplan.year
+            roster_type = algoplan.algorithm
+        num_days=calendar.monthrange(scheduling_year, scheduling_month)[1]
+        if roster_type.lower()=="full":
             print("we are inside type full")
             teams_queryset = Team.objects.select_related('doctor').all()
             off_requests_queryset = OffRequest.objects.select_related('doctor').all()
@@ -153,7 +160,7 @@ class RosterView(APIView):
                 doctor_input_details[doctor_id]["off_dates"].append(date)
                 doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
 
-            roster, docs_info = generate_full_month_roster(teams, doctor_input_details)
+            roster, docs_info = generate_full_month_roster(scheduling_month, num_days, scheduling_year,teams, doctor_input_details)
         else:
             first_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=1)
             second_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=2)
@@ -200,7 +207,10 @@ class RosterView(APIView):
                 doctor_input_details[doctor_id]["off_dates"].append(date)
                 doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
             
-            roster, docs_info=generate_full_month_roster_half_by_half(first_half_teams, second_half_teams, doctor_input_details)
+            roster, docs_info=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,first_half_teams, second_half_teams, doctor_input_details)
+        if roster is None:
+            return Response({"error": "Error generating roster"}, status=status.HTTP_400_BAD_REQUEST)
+        
         Roster.objects.all().delete()
         Team.objects.all().delete()
         OffRequest.objects.all().delete()
@@ -252,6 +262,110 @@ class RosterListView(APIView):
 
         # Return the serialized data
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+class RosterGenerationCheckView(APIView):
+    def get(self, request):
+        doctor_id_request = request.data.get('doctor_id')  # Gets doctor_id
+        dates_request = request.data.get('dates', [])
+        no_of_leaves_request = request.data.get("no_of_leaves",0)
+        algoplan = AlgoPlan.objects.first()  # Assumes there is always one row
+        if algoplan:
+            scheduling_month = algoplan.month
+            scheduling_year = algoplan.year
+            roster_type = algoplan.algorithm
+        num_days=calendar.monthrange(scheduling_year, scheduling_month)[1]
+        if roster_type.lower()=="full":
+            print("we are inside type full")
+            teams_queryset = Team.objects.select_related('doctor').all()
+            off_requests_queryset = OffRequest.objects.select_related('doctor').all()
+
+            teams = []
+            team_dict = {}
+            doctor_input_details ={}
+
+            for team in teams_queryset:
+                doctor_id = team.doctor.doctor_id
+                team_id = team.team_id
+                
+                if doctor_id not in doctor_input_details:
+                    doctor_input_details[doctor_id] = {
+                        'no_of_consecutive_working_days': team.doctor.no_of_consecutive_working_days, 
+                        'no_of_consecutive_night_shifts': team.doctor.no_of_consecutive_night_shifts, 
+                        'no_of_consecutive_offs': team.doctor.no_of_consecutive_offs, 
+                        'worked_last_shift': team.doctor.worked_last_shift, 
+                        'off_dates': [], 
+                        'no_of_leaves': 0
+                    }
+
+                if team_id not in team_dict:
+                    teams.append([])
+                    team_dict[team_id]=len(teams)-1
+                teams[team_dict[team_id]].append(doctor_id)
+                        
+            for off_request in off_requests_queryset:
+                doctor_id = off_request.doctor.doctor_id
+                date = off_request.date
+                doctor_input_details[doctor_id]["off_dates"].append(date)
+                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
+                if doctor_id == doctor_id_request:
+                    doctor_input_details[doctor_id]["off_dates"].append(dates_request)
+                    doctor_input_details[doctor_id]["no_of_leaves"]+=no_of_leaves_request
+
+            roster, docs_info = generate_full_month_roster(scheduling_month, num_days, scheduling_year,teams, doctor_input_details)
+        else:
+            first_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=1)
+            second_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=2)
+            off_requests_queryset = OffRequest.objects.select_related('doctor').all()
+            first_half_teams = []
+            first_half_team_dict = {}
+            doctor_input_details ={}
+
+            for team in first_half_teams_queryset:
+                doctor_id = team.doctor.doctor_id
+                team_id = team.team_id
+                
+                if doctor_id not in doctor_input_details:
+                    doctor_input_details[doctor_id] = {
+                        'no_of_consecutive_working_days': team.doctor.no_of_consecutive_working_days, 
+                        'no_of_consecutive_night_shifts': team.doctor.no_of_consecutive_night_shifts, 
+                        'no_of_consecutive_offs': team.doctor.no_of_consecutive_offs, 
+                        'worked_last_shift': team.doctor.worked_last_shift, 
+                        'off_dates': [], 
+                        'no_of_leaves': 0
+                    }
+
+                if team_id not in first_half_team_dict:
+                    first_half_teams.append([])
+                    first_half_team_dict[team_id]=len(first_half_teams)-1
+                first_half_teams[first_half_team_dict[team_id]].append(doctor_id)
+            
+            second_half_teams = []
+            second_half_team_dict = {}
+
+            for team in second_half_teams_queryset:
+                doctor_id = team.doctor.doctor_id
+                team_id = team.team_id
+
+                if team_id not in second_half_team_dict:
+                    second_half_teams.append([])
+                    second_half_team_dict[team_id]=len(second_half_teams)-1
+                second_half_teams[second_half_team_dict[team_id]].append(doctor_id)
+
+            for off_request in off_requests_queryset:
+                doctor_id = off_request.doctor.doctor_id
+                date = off_request.date
+                
+                doctor_input_details[doctor_id]["off_dates"].append(date)
+                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
+                if doctor_id == doctor_id_request:
+                    doctor_input_details[doctor_id]["off_dates"].append(dates_request)
+                    doctor_input_details[doctor_id]["no_of_leaves"]+=no_of_leaves_request
+            
+            roster, docs_info=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,first_half_teams, second_half_teams, doctor_input_details)
+        if roster is None:
+            return Response({"result": "false"})
+        else:
+            return Response({"result": "true"})
 
 @api_view(['POST'])
 def send_otp(request):
