@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Calendar from '../components/Calendar';
 import OffDoctorsByDate from '../components/OffDoctorsByDate';
-import useAuth from "../App"
+import {AuthContext} from "../App"
 
 const RequestPage = () => {
   const [selectedDates, setSelectedDates] = useState([]); // Store multiple selected dates
@@ -10,8 +10,8 @@ const RequestPage = () => {
   const [error, setError] = useState(null); // To track errors
   const [successPopup, setSuccessPopup] = useState(false); // To track success popup
   const [done,setDone] = useState()
-  const { isAuthenticated, user } = useAuth();
-  const doctor_id = user.doctor_id; // Assume doctor ID is 17 (you can dynamically pass it)
+  const { user } = useContext(AuthContext);
+  const doctor_id = user ? user.doctorId : 19;
 
   const handleButtonClick = (button) => {
     setRequestType(button); // Set requestType button on click
