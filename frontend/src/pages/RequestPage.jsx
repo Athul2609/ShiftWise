@@ -18,11 +18,35 @@ const RequestPage = () => {
     setRequestType(button); // Set requestType button on click
   };
 
+  const fiveContinuousCheck = (arr) => {
+    arr.sort((a, b) => a - b); // Sort the array in ascending order
+    let count = 1; // Start counting consecutive numbers
+  
+    for (let i = 1; i < arr.length; i++) {
+      if (arr[i] === arr[i - 1] + 1) {
+        count++; // Increase count if the sequence continues
+        if (count === 5) return true; // Return true if we reach 5 consecutive numbers
+      } else {
+        count = 1; // Reset count if sequence breaks
+      }
+    }
+  
+    return false; // Return false if no sequence of 5 found
+  };
+
+  
+
   // API request function
   const handleApply = async () => {
     setLoading(true);
     if (selectedDates.length === 0) {
       setError('Please select at least one date');
+      setLoading(false);
+      return;
+    }
+    if (requestType.toLowerCase() === "off" && fiveContinuousCheck(selectedDates))
+    {
+      setError('You cannot take off for more than 4 consecutive days');
       setLoading(false);
       return;
     }

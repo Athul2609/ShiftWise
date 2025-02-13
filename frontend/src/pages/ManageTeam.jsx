@@ -2,6 +2,9 @@ import { useEffect, useState } from "react";
 
 export default function TeamManagement() {
   const [done,setDone] = useState();
+  const [loading,setLoading] = useState(false);
+  const [error,setError] = useState("")
+  const [successPopup,setSuccessPopup] = useState(false)
 
   const [algo,setAlgo] = useState();
   const [doctors, setDoctors] = useState([]);
@@ -27,6 +30,7 @@ export default function TeamManagement() {
   const [showDoctorDropdownSH, setShowDoctorDropdownSH] = useState(false);
 
   useEffect(() => {
+    setLoading(true)
     fetch("http://127.0.0.1:8000/api/algoplan/")
     .then((response) => response.json())
     .then((data) => setDone(data))
@@ -35,6 +39,7 @@ export default function TeamManagement() {
     fetch("http://127.0.0.1:8000/api/doctors/")
       .then((response) => response.json())
       .then((data) => setDoctors(data))
+      .then(setLoading(false))
       .catch((error) => console.error("Error fetching doctors:", error));
   }, []);
 
@@ -102,6 +107,7 @@ export default function TeamManagement() {
   };
 
   const submitTeams = () => {
+    setLoading(true)
       const formatTeams = (teams, schedulingHalf) => 
         Object.entries(teams).flatMap(([teamId, doctors]) => 
           doctors.map(({ doctor_id }) => ({ team_id: teamId, doctor: doctor_id, scheduling_half: schedulingHalf }))
@@ -133,13 +139,14 @@ export default function TeamManagement() {
 
       Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teams, 0))])
       .then(() => {
-        alert("Teams submitted successfully!");
-        window.location.reload();
+        setLoading(false)
+        setSuccessPopup(true)
       })
-      .catch(() => console.error("Error submitting teams"));
+      .catch(() => setError("Error submitting teams"));
   };
 
   const submitTeamsHalf = () => {
+    setLoading(true);
     const formatTeams = (teams, schedulingHalf) => 
       Object.entries(teams).flatMap(([teamId, doctors]) => 
         doctors.map(({ doctor_id }) => ({ team_id: teamId, doctor: doctor_id, scheduling_half: schedulingHalf }))
@@ -171,27 +178,77 @@ export default function TeamManagement() {
   
     Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teamsFH, 1)), submitTeams(formatTeams(teamsSH, 2))])
       .then(() => {
-        alert("Teams submitted successfully!");
-        window.location.reload();
+        setLoading(false)
+        setSuccessPopup(true)
       })
-      .catch(() => console.error("Error submitting one or more team submissions"));
+      .catch(() => setError("Error submitting teams"));
   };
 
   const handleRosterGenerate = async () =>{
+    setLoading(true)
     try {
       await fetch("http://127.0.0.1:8000/api/roster/generate/", {
         method: "GET"
       });
+      setSuccessPopup(true)
     } catch (error) {
-      console.error("Error generating roster:", error);
+      setError("An error occured while generating roseter")
+    }
+    finally{
+      setLoading(false)
     }
   }
+
+  const handlePopupClose = () => {
+    setSuccessPopup(false); // Close the popup
+    setError(null);
+    window.location.reload();
+  };
   
 
   return (done && done.length !== 0) ?
   <div className="flex flex-col items-center justify-center h-screen bg-[#7FA1C3]">
       <button onClick={handleRosterGenerate} className="text-xl font-semibold text-center mb-4 text-[#6482AD] bg-[#F5EDED] px-3 py-1 rounded hover:text-[#F5EDED] hover:bg-[#6482AD]">GENERATE ROSTER</button>
-    <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month+1}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
+      <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month+1}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
+      {loading && 
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+              <p className="mt-4 text-lg text-white">Loading...</p>
+            </div>
+          </div>
+      }
+      {/* Error Message */}
+      {error && 
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="bg-white p-6 rounded shadow-lg text-center">
+          <h2 className="text-2xl font-bold text-red-600">Error!</h2>
+          <p>{error}.</p>
+          <button
+            className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+            onClick={handlePopupClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      }
+
+      {/* Success Popup */}
+      {successPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-green-600">Success!</h2>
+            <p>Roster Succesfully generated.</p>
+            <button
+              className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+              onClick={handlePopupClose}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
   </div>
   :
   (algo === "full" ?
@@ -304,6 +361,45 @@ export default function TeamManagement() {
             SUBMIT
           </button>
       </div>
+      {loading && 
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+              <p className="mt-4 text-lg text-white">Loading...</p>
+            </div>
+          </div>
+      }
+      {/* Error Message */}
+      {error && 
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="bg-white p-6 rounded shadow-lg text-center">
+          <h2 className="text-2xl font-bold text-red-600">Error!</h2>
+          <p>{error}.</p>
+          <button
+            className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+            onClick={handlePopupClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      }
+
+      {/* Success Popup */}
+      {successPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-green-600">Success!</h2>
+            <p>Roster Succesfully generated.</p>
+            <button
+              className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+              onClick={handlePopupClose}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
   :
@@ -483,6 +579,46 @@ export default function TeamManagement() {
           </div>
         </>
       }
+      {loading && 
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+            <div className="flex flex-col items-center">
+              <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+              <p className="mt-4 text-lg text-white">Loading...</p>
+            </div>
+          </div>
+      }
+      {/* Error Message */}
+      {error && 
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+        <div className="bg-white p-6 rounded shadow-lg text-center">
+          <h2 className="text-2xl font-bold text-red-600">Error!</h2>
+          <p>{error}.</p>
+          <button
+            className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+            onClick={handlePopupClose}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+      }
+
+      {/* Success Popup */}
+      {successPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-green-600">Success!</h2>
+            <p>Teams succesfully created.</p>
+            <button
+              className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+              onClick={handlePopupClose}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   ))
+  
 }
