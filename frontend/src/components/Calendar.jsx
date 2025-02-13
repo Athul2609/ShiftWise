@@ -36,7 +36,7 @@ const Calendar = ({ month, year, selectedDates, setSelectedDates, hoveredDay, se
   };
 
   return (
-    <div className="bg-[#E2DAD6] rounded-lg p-4 w-4/5 max-w-xs sm:max-w-sm mx-auto sm:max-w-md md:max-w-lg">
+    <div className="bg-[#E2DAD6] rounded-lg p-4 w-4/5 max-w-xs sm:max-w-sm mx-auto mb-4 md:max-w-lg">
       <div className="grid grid-cols-7 gap-1 sm:gap-2 md:gap-4">
         {days.map((day) => (
           <button

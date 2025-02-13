@@ -18,12 +18,12 @@ export default function OffDoctorsByDate({ hoverDate }) {
   }, [hoverDate]);
 
   return (
-    <div className="p-4 rounded-lg bg-[#F5EDED] text-[#6482AD] font-outfit">
+    <div className="p-4 rounded-lg bg-[#F5EDED] text-[#6482AD] font-outfit w-4/5 max-w-xs sm:max-w-sm md:max-w-lg flex justify-center items-center h-40 mb-8">
    {!hoverDate ? (
         <p>Hover over a date to see which doctors are off or on leave.</p>
       ) : (
         doctors.length > 0 ? (
-          <>
+          <div>
             <p>Doctors taking off/leave on {hoverDate}:</p>
             <ul>
               {doctors.map((doctorName, index) => (
@@ -32,7 +32,7 @@ export default function OffDoctorsByDate({ hoverDate }) {
                 </li>
               ))}
             </ul>
-          </>
+          </div>
         ) : (
           <p>No doctors are on off/leave on this date.</p>
         )
