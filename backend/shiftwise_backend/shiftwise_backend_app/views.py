@@ -264,7 +264,7 @@ class RosterListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class RosterGenerationCheckView(APIView):
-    def get(self, request):
+    def post(self, request):
         doctor_id_request = request.data.get('doctor_id')  # Gets doctor_id
         dates_request = request.data.get('dates', [])
         no_of_leaves_request = request.data.get("no_of_leaves",0)

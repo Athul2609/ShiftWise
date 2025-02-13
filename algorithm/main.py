@@ -75,7 +75,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [2, 3, 4],
+        'off_dates': [],
         'no_of_leaves': 0
     },
     'Ashique': {
@@ -83,7 +83,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [2, 3, 4],
+        'off_dates': [],
         'no_of_leaves': 0
     },
     'Avinash': {
@@ -91,7 +91,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [2, 3, 4],
+        'off_dates': [],
         'no_of_leaves': 0
     },
     'Midhun': {
@@ -99,7 +99,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [2, 3, 4],
+        'off_dates': [],
         'no_of_leaves': 0
     },
     'Priya': {
@@ -339,7 +339,7 @@ if __name__ =="__main__":
     #                             }
     #                     }
 
-    scheduling_month, num_days, scheduling_year=get_next_month_scheduling_info()
+    scheduling_month, num_days, scheduling_year=[1,28,2025]
 
     roster,_=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,teams_first_half, teams_second_half, doctor_input_details)
 

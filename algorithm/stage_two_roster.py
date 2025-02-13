@@ -2,8 +2,11 @@ from stage_one_roster import *
 import math
 
 def verify_min_shift_criteria(doc_info, scheduling_half):
-    min_criteria=17 if scheduling_half != 1 else 7
-    min_criteria=math.ceil(min_criteria/2)-1
+    no_of_leaves = doc_info["no_of_leaves"]
+    min_criteria=17 if scheduling_half != 1 else 9
+    if no_of_leaves>2:
+        reduction=math.ceil(no_of_leaves/2)-1
+        min_criteria-=reduction
     if(doc_info["total_no_of_shifts"]<min_criteria):
         return False
     return True

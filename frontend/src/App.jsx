@@ -56,16 +56,26 @@ const AuthProvider = ({ children }) => {
 
 const useAuth = () => useContext(AuthContext);
 
-// Protected Route Component
+// Protected Route Component(for some reason the AuthContext was always giving default values so had to do it like this)
 const ProtectedRoute = ({ element, requiredRole }) => {
-  const { isAuthenticated, user } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  const token = Cookies.get('jwt');
+  if (token) {
+    try {
+      const decodedToken = jwtDecode(token);
+      const currentTime = Date.now() / 1000;
+      if (decodedToken.exp > currentTime) {
+        if (requiredRole !== undefined && decodedToken.role !== requiredRole) {
+          return <Navigate to="/" replace />;
+        }
+      } else {
+        return <Navigate to="/login" replace />;
+      }
+    } catch (error) {
+      console.error('Invalid token:', error);
+    }
   }
-
-  if (requiredRole !== undefined && user.role !== requiredRole) {
-    return <Navigate to="/" replace />;
+  else{
+    return <Navigate to="/login" replace />;
   }
 
   return element;
