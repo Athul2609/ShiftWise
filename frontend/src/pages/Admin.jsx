@@ -120,9 +120,9 @@ const Admin = () => {
           <tr className="bg-[#E2DAD6] text-[#6482AD]">
             <th className="border p-2">Name</th>
             <th className="border p-2">Email</th>
-            <th className="border p-2">Working Days</th>
-            <th className="border p-2">Night Shifts</th>
-            <th className="border p-2">Off Days</th>
+            <th className="border p-2">Consecutive Working Days</th>
+            <th className="border p-2">Consecutive Night Shifts</th>
+            <th className="border p-2">Consecutive Off Days</th>
             <th className="border p-2">Last Shift</th>
             <th className="border p-2"></th>
           </tr>
