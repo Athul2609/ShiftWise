@@ -90,11 +90,11 @@ WSGI_APPLICATION = 'shiftwise_backend.wsgi.application'
 DATABASES = {
      'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'shiftwise',           # Your database name
-        'USER': 'postgres',            # PostgreSQL user
-        'PASSWORD': 'postgres',        # Password for postgres user
-        'HOST': 'localhost',           # Database host (usually localhost)
-        'PORT': '5432',                # Default PostgreSQL port
+        'NAME': config('DB_NAME'),
+        'USER': config('DB_USER'),
+        'PASSWORD': config('DB_PASSWORD'),
+        'HOST': config('DB_HOST'),
+        'PORT': config('DB_PORT', default=5432, cast=int),
     }
 }
 
