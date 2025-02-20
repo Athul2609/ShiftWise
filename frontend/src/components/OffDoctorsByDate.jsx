@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-
+import { API_BASE_URL } from "../config";
 export default function OffDoctorsByDate({ hoverDate }) {
   const [doctors, setDoctors] = useState([]);
-  
   // Fetch doctors data based on hoverDate
   useEffect(() => {
     if (hoverDate) {
-      fetch(`http://127.0.0.1:8000/api/off-requests/date/${hoverDate}`)
+      fetch(`${API_BASE_URL}/api/off-requests/date/${hoverDate}`)
         .then((response) => response.json())
         .then((data) => {
           // Extract doctor names from the response

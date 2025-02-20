@@ -5,7 +5,7 @@ import Cookies from 'js-cookie';
 
 import Navbar from './components/Navbar';
 import HomePage from './pages/HomePage';
-import RequestPage from './pages/requestPage';
+import RequestPage from './pages/RequestPage';
 import ManageTeam from './pages/ManageTeam';
 import Admin from './pages/Admin';
 import LoginPage from './pages/LoginPage';

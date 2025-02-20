@@ -1,5 +1,6 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../App";
+import { API_BASE_URL } from "../config";
 
 export default function RosterTable() {
   const [roster, setRoster] = useState([]);
@@ -40,7 +41,7 @@ export default function RosterTable() {
 
   useEffect(() => {
     // Fetch roster data
-    fetch("http://127.0.0.1:8000/api/roster/list/")
+    fetch(`${API_BASE_URL}/api/roster/list/`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -57,7 +58,7 @@ export default function RosterTable() {
       });
 
     // Fetch doctor data
-    fetch("http://127.0.0.1:8000/api/doctors/")
+    fetch(`${API_BASE_URL}/api/doctors/`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Network response was not ok");
@@ -71,7 +72,7 @@ export default function RosterTable() {
         setError(error);
       });
 
-    fetch("http://127.0.0.1:8000/api/teams/previous/")
+    fetch(`${API_BASE_URL}/api/teams/previous/`)
     .then((response) => {
       if (!response.ok) {
         throw new Error("Network response was not ok");

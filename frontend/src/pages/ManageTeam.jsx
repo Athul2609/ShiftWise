@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../config";
 
 export default function TeamManagement() {
   const [done,setDone] = useState();
@@ -31,12 +32,12 @@ export default function TeamManagement() {
 
   useEffect(() => {
     setLoading(true)
-    fetch("http://127.0.0.1:8000/api/algoplan/")
+    fetch(`${API_BASE_URL}/api/algoplan/`)
     .then((response) => response.json())
     .then((data) => setDone(data))
     .catch((error) => console.error("Error fetching doctors:", error));
 
-    fetch("http://127.0.0.1:8000/api/doctors/")
+    fetch(`${API_BASE_URL}/api/doctors/`)
       .then((response) => response.json())
       .then((data) => setDoctors(data))
       .then(setLoading(false))
@@ -116,7 +117,7 @@ export default function TeamManagement() {
       const submitAlgoPlan = async () =>
       {
         try {
-          await fetch("http://127.0.0.1:8000/api/algoplan/create/", {
+          await fetch(`${API_BASE_URL}/api/algoplan/create/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({month: month, year: year, algorithm:algo}),
@@ -127,7 +128,7 @@ export default function TeamManagement() {
       }
       const submitTeams = async (teamsData) => {
         try {
-          await fetch("http://127.0.0.1:8000/api/teams/create/", {
+          await fetch(`${API_BASE_URL}/api/teams/create/`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(teamsData),
@@ -155,7 +156,7 @@ export default function TeamManagement() {
     const submitAlgoPlan = async () =>
     {
       try {
-        await fetch("http://127.0.0.1:8000/api/algoplan/create/", {
+        await fetch(`${API_BASE_URL}/api/algoplan/create/` {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({month: month-1, year: year, algorithm:algo}),
@@ -166,7 +167,7 @@ export default function TeamManagement() {
     }
     const submitTeams = async (teamsData) => {
       try {
-        await fetch("http://127.0.0.1:8000/api/teams/create/", {
+        await fetch(`${API_BASE_URL}/api/teams/create/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(teamsData),
@@ -187,7 +188,7 @@ export default function TeamManagement() {
   const handleRosterGenerate = async () =>{
     setLoading(true)
     try {
-      await fetch("http://127.0.0.1:8000/api/roster/generate/", {
+      await fetch(`${API_BASE_URL}/api/roster/generate/`, {
         method: "GET"
       });
       setSuccessPopup(true)

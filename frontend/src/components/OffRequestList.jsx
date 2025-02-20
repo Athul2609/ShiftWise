@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-
+import { API_BASE_URL } from "../config";
 const OffRequestList = () => {
   const [offRequests, setOffRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -7,7 +7,7 @@ const OffRequestList = () => {
   // Fetch off requests from the API
   const fetchOffRequests = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/off-requests/');
+      const response = await fetch(`${API_BASE_URL}/api/off-requests/`);
       if (!response.ok) {
         throw new Error('Network response was not ok');
       }
@@ -23,7 +23,7 @@ const OffRequestList = () => {
   // Delete off request
   const deleteOffRequest = async (doctorId, date) => {
     try {
-      const response = await fetch(`http://127.0.0.1:8000/api/off-requests/${doctorId}/${date}/`, {
+      const response = await fetch(`${API_BASE_URL}/api/off-requests/${doctorId}/${date}/`, {
         method: 'DELETE',
       });
       if (response.ok) {

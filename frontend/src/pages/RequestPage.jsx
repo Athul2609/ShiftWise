@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import Calendar from '../components/Calendar';
 import OffDoctorsByDate from '../components/OffDoctorsByDate';
 import {AuthContext} from "../App"
+import { API_BASE_URL } from "../config";
 
 const RequestPage = () => {
   const [selectedDates, setSelectedDates] = useState([]); 
@@ -59,7 +60,7 @@ const RequestPage = () => {
           dates: selectedDates,
           no_of_leaves: requestType.toLowerCase() == "off" ? 0 : selectedDates.length,
         }
-        const response = await fetch('http://127.0.0.1:8000/api/roster/check/', {
+        const response = await fetch(`${API_BASE_URL}/api/roster/check/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -87,7 +88,7 @@ const RequestPage = () => {
         };
 
         // Send POST request for each date
-        const response = await fetch('http://127.0.0.1:8000/api/off-requests/create/', {
+        const response = await fetch(`${API_BASE_URL}/api/off-requests/create/`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -122,7 +123,7 @@ const RequestPage = () => {
 
   useEffect(() => {
     setLoading(true);
-    fetch("http://127.0.0.1:8000/api/algoplan/")
+    fetch(`${API_BASE_URL}/api/algoplan/`)
     .then((response) => response.json())
     .then((data) => setDone(data))
     .catch((error) => console.error("Error fetching doctors:", error));

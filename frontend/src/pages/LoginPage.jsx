@@ -2,6 +2,7 @@ import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { AuthContext } from "../App"; // Import AuthContext
+import { API_BASE_URL } from "../config";
 
 // Local reusable components
 const Card = ({ children, className }) => (
@@ -50,7 +51,7 @@ const LoginPage = () => {
     try {
       setError("");
       setLoading(true); // Set loading state to true
-      const response = await fetch("http://127.0.0.1:8000/api/send-otp/", {
+      const response = await fetch(`${API_BASE_URL}/api/send-otp/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -73,7 +74,7 @@ const LoginPage = () => {
   const verifyOtp = async () => {
     try {
       setError("");
-      const response = await fetch("http://127.0.0.1:8000/api/verify-otp/", {
+      const response = await fetch(`${API_BASE_URL}/api/verify-otp/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

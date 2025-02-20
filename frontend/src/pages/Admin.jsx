@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import OffRequestList from "../components/OffRequestList";
+import { API_BASE_URL } from "../config";
 
 const Admin = () => {
   const [doctors, setDoctors] = useState([]);
@@ -13,12 +14,12 @@ const Admin = () => {
 
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/algoplan/")
+    fetch(`${API_BASE_URL}/api/algoplan/`)
     .then((response) => response.json())
     .then((data) => setDone(data))
     .catch((error) => console.error("Error fetching doctors:", error));
 
-    fetch("http://127.0.0.1:8000/api/doctors/")
+    fetch(`${API_BASE_URL}/api/doctors/`)
       .then((response) => response.json())
       .then((data) => setDoctors(data))
       .catch((error) => console.error("Error fetching doctors:", error));
@@ -32,7 +33,7 @@ const Admin = () => {
   };
 
   const saveChangesForID = (doctorId) => {
-    fetch(`http://127.0.0.1:8000/api/doctors/${doctorId}/`, {
+    fetch(`${API_BASE_URL}/api/doctors/${doctorId}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(editedDoctors[doctorId]),
@@ -61,7 +62,7 @@ const Admin = () => {
   
 
   const makeTeamManager = (doctorId, role) => {
-    fetch(`http://127.0.0.1:8000/api/doctors/${doctorId}/`, {
+    fetch(`${API_BASE_URL}/api/doctors/${doctorId}/`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ role: role }),
@@ -75,7 +76,7 @@ const Admin = () => {
   };
 
   const addDoctor = () => {
-    fetch("http://127.0.0.1:8000/api/doctors/create/", {
+    fetch(`${API_BASE_URL}/api/doctors/create/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newDoctor),
@@ -88,7 +89,7 @@ const Admin = () => {
   };
 
   const deleteDoctor = (doctorId) => {
-    fetch(`http://127.0.0.1:8000/api/doctors/delete/${doctorId}/`, {
+    fetch(`${API_BASE_URL}/api/doctors/delete/${doctorId}/`, {
       method: "DELETE",
     }).then(() => {
       setDoctors((prev) => prev.filter((doc) => doc.doctor_id !== doctorId));
