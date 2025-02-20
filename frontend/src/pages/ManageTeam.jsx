@@ -30,6 +30,11 @@ export default function TeamManagement() {
   const [showDoctorDropdownFH, setShowDoctorDropdownFH] = useState(false);
   const [showDoctorDropdownSH, setShowDoctorDropdownSH] = useState(false);
 
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
   useEffect(() => {
     setLoading(true)
     fetch(`${API_BASE_URL}/api/algoplan/`)
@@ -208,7 +213,7 @@ export default function TeamManagement() {
   
 
   return (done && done.length !== 0) ?
-  <div className="flex flex-col items-center justify-center h-screen bg-[#7FA1C3]">
+  <div className="flex flex-col items-center justify-center min-h-screen h-full bg-[#7FA1C3]">
       <button onClick={handleRosterGenerate} className="text-xl font-semibold text-center mb-4 text-[#6482AD] bg-[#F5EDED] px-3 py-1 rounded hover:text-[#F5EDED] hover:bg-[#6482AD]">GENERATE ROSTER</button>
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month+1}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
       {loading && 
@@ -254,7 +259,7 @@ export default function TeamManagement() {
   :
   (algo === "full" ?
   (
-    <div className="flex flex-col items-center h-screen bg-[#7FA1C3]">
+    <div className="flex flex-col items-center min-h-screen h-full bg-[#7FA1C3]">
       <div className=" p-4 rounded-xl border-none">
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">ALGORITHM</h2>
       <div className="flex rounded-xl overflow-hidden border-none">
@@ -274,14 +279,17 @@ export default function TeamManagement() {
       <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
         <div>
           <label className="block text-[#F5EDED] font-medium">MONTH</label>
-          <input
-            type="number"
-            min="1"
-            max="12"
+          <select
             value={month}
-            onChange={(e) => setMonth(parseInt(e.target.value) || 1)}
+            onChange={(e) => setMonth(parseInt(e.target.value))}
             className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
-          />
+          >
+            {months.map((_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {_}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-[#F5EDED] font-medium">YEAR</label>
@@ -358,7 +366,7 @@ export default function TeamManagement() {
         </div>
       </div>
       <div className="mt-4"> {/* Container for submit button on a new line */}
-          <button onClick={submitTeams} className="px-4 py-2 bg-[#6482AD] text-white rounded">
+          <button onClick={submitTeams} className="px-4 py-2 mb-4 bg-[#6482AD] text-white rounded">
             SUBMIT
           </button>
       </div>
@@ -391,7 +399,7 @@ export default function TeamManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h2 className="text-2xl font-bold text-green-600">Success!</h2>
-            <p>Roster Succesfully generated.</p>
+            <p>Teams Succesfully created.</p>
             <button
               className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
               onClick={handlePopupClose}
@@ -405,7 +413,7 @@ export default function TeamManagement() {
   )
   :
   (
-    <div className="flex flex-col items-center h-screen bg-[#7FA1C3]">
+    <div className="flex flex-col items-center min-h-screen h-full bg-[#7FA1C3]">
       <div className=" p-4 rounded-xl border-none">
       <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">ALGORITHM</h2>
       <div className="flex rounded-xl overflow-hidden border-none">
@@ -425,14 +433,17 @@ export default function TeamManagement() {
       <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
         <div>
           <label className="block text-[#F5EDED] font-medium">MONTH</label>
-          <input
-            type="number"
-            min="1"
-            max="12"
+          <select
             value={month}
-            onChange={(e) => setMonth(parseInt(e.target.value) || 1)}
+            onChange={(e) => setMonth(parseInt(e.target.value))}
             className="mt-1 p-2 w-full border rounded-lg focus:ring-2 focus:ring-black-500 focus:outline-none"
-          />
+          >
+            {months.map((_, index) => (
+              <option key={index + 1} value={index + 1}>
+                {_}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-[#F5EDED] font-medium">YEAR</label>

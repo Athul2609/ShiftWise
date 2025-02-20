@@ -1,74 +1,81 @@
-// src/components/Navbar.jsx
-import React, { useContext } from 'react';
-import { Link, useNavigate  } from 'react-router-dom'; // Assuming you're using react-router for navigation
-import { AuthContext } from "../App"
+import React, { useState, useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from "../App";
 
 const Navbar = () => {
   const { isAuthenticated, logout, user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const doctorRole = user.role ?? 0;
+  const doctorRole = user?.role ?? 0;
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
-    navigate("/login"); // Redirect to login page after logout
+    navigate("/login");
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
   return (
-    <nav className="bg-[#7FA1C3] p-4 flex justify-between items-center">
-      {/* Left side: Product name */}
+    <nav className="bg-[#7FA1C3] p-4 flex justify-between items-center relative">
       <Link to="/">
-        <div className="text-2xl font-bold" style={{ color: '#E2DAD6' }}>ShiftWise</div>
+        <div className="text-2xl font-bold text-[#E2DAD6]">ShiftWise</div>
       </Link>
-      {/* Right side: Profile button and navigation links */}
-      {
-        isAuthenticated && 
-        <div className="flex items-center space-x-6">
-          {/* User Profile Button */}
 
-          {/* Links */}
-          <div className="flex space-x-4">
+      {/* Mobile Menu Toggle Button */}
+      <button onClick={toggleMenu} className="text-[#E2DAD6] text-3xl md:hidden">
+        {isMenuOpen ? '✕' : '☰'}
+      </button>
+
+      {/* Desktop Navigation */}
+      <div className="hidden md:flex items-center space-x-6">
+        {isAuthenticated && (
+          <>
             {doctorRole === 2 ? (
-              <Link
-                to="/admin"
-                className="hover:underline font-outfit"
-                style={{ color: '#E2DAD6' }}
-              >
-                Admin
-              </Link>
+              <Link to="/admin" className="text-[#E2DAD6] font-outfit hover:underline">Admin</Link>
             ) : (
-              <Link
-                to="/request"
-                className="font-outfit hover:underline"
-                style={{ color: '#E2DAD6' }}
-              >
-                Request Leave
-              </Link>
+              <Link to="/request" className="text-[#E2DAD6] font-outfit hover:underline">Request Leave</Link>
             )}
 
             {doctorRole === 1 && (
-              <Link
-                to="/manage-team"
-                className="font-outfit hover:underline"
-                style={{ color: '#E2DAD6' }}
-              >
-                Manage Team
-              </Link>
+              <Link to="/manage-team" className="text-[#E2DAD6] font-outfit hover:underline">Manage Team</Link>
             )}
-          </div>
-          {/* <button className="w-10 h-10 rounded-full bg-gray-600 flex justify-center items-center text-white"> */}
-            {/* <span className="text-xl">👤</span> You can replace this with an avatar */}
-        
-          <button
-                className="hover:text-blue-400 font-outfit hover:underline"
-                style={{ color: '#E2DAD6' }}
-                onClick={handleLogout} 
-              >
-            Sign Out
-          </button>
 
+            <button onClick={handleLogout} className="text-[#E2DAD6] font-outfit hover:underline">
+              Sign Out
+            </button>
+          </>
+        )}
+        {!isAuthenticated && (
+          <Link to="/login" className="text-[#E2DAD6] font-outfit hover:underline">Sign In</Link>
+        )}
+      </div>
+
+      {/* Mobile Navigation Dropdown */}
+      {isMenuOpen && (
+        <div className="absolute top-full left-0 w-full bg-[#7FA1C3] flex flex-col items-center py-4 space-y-4 md:hidden">
+          {isAuthenticated ? (
+            <>
+              {doctorRole === 2 ? (
+                <Link to="/admin" className="text-[#E2DAD6] font-outfit hover:underline" onClick={toggleMenu}>Admin</Link>
+              ) : (
+                <Link to="/request" className="text-[#E2DAD6] font-outfit hover:underline" onClick={toggleMenu}>Request Leave</Link>
+              )}
+
+              {doctorRole === 1 && (
+                <Link to="/manage-team" className="text-[#E2DAD6] font-outfit hover:underline" onClick={toggleMenu}>Manage Team</Link>
+              )}
+
+              <button onClick={() => { handleLogout(); toggleMenu(); }} className="text-[#E2DAD6] font-outfit hover:underline">
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <Link to="/login" className="text-[#E2DAD6] font-outfit hover:underline" onClick={toggleMenu}>Sign In</Link>
+          )}
         </div>
-      }
-      {!isAuthenticated && <Link to="/login"  className="hover:text-blue-400 font-outfit hover:underline" style={{ color: '#E2DAD6' }}>Sign In</Link>}
+      )}
     </nav>
   );
 };
