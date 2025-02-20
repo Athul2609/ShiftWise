@@ -15,8 +15,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authentication import verify_jwt
-from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan
-from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer, RosterSerializer, AlgoPlanSerializer
+from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan, AlgoPlan_archives, Team_backup
+from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer, RosterSerializer, AlgoPlanSerializer, AlgoPlanArchiveSerializer, TeamBackupSerializer
 from .utils import generate_jwt,generate_otp
 
 # Adjusting the system path for algorithm imports
@@ -30,6 +30,10 @@ class AlgoPlanCreateView(generics.CreateAPIView):
 class AlgoPlanListView(generics.ListAPIView):
     queryset = AlgoPlan.objects.all()
     serializer_class = AlgoPlanSerializer
+
+class AlgoPlanArchiveListView(generics.ListAPIView):
+    queryset = AlgoPlan_archives.objects.all()
+    serializer_class = AlgoPlanArchiveSerializer
 
 # API to create a new doctor
 class DoctorCreateView(generics.CreateAPIView):
@@ -71,6 +75,9 @@ class TeamListView(generics.ListAPIView):
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
 
+class TeamBackupListView(generics.ListAPIView):
+    queryset = Team_backup.objects.all()
+    serializer_class = TeamBackupSerializer
 
 # API to create off request
 class OffRequestCreateView(generics.CreateAPIView):
@@ -212,8 +219,26 @@ class RosterView(APIView):
             return Response({"error": "Error generating roster"}, status=status.HTTP_400_BAD_REQUEST)
         
         Roster.objects.all().delete()
-        Team.objects.all().delete()
         OffRequest.objects.all().delete()
+
+        Team_backup.objects.all().delete()
+        team_objects = []
+        for record in Team.objects.all():
+            data = record.__dict__.copy()
+            data.pop('_state')
+            obj = Team_backup(**data)
+            obj.pk = None 
+            team_objects.append(obj)
+
+        Team_backup.objects.bulk_create(team_objects)
+        Team.objects.all().delete()
+
+        record = AlgoPlan.objects.first()
+        if record:
+            data = record.__dict__.copy()
+            data.pop('_state')
+            data['id'] = None
+            AlgoPlan_archives.objects.create(**data)
         AlgoPlan.objects.all().delete()
 
         for doctor_id, details in docs_info.items():

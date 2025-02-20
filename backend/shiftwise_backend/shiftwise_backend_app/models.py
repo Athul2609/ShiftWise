@@ -33,6 +33,14 @@ class Team(models.Model):
     def __str__(self):
         return f'Team {self.team_id} - {self.doctor.name}'
 
+class Team_backup(models.Model):
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    team_id = models.CharField(max_length=50)
+    scheduling_half = models.IntegerField(default=0)
+
+    def __str__(self):
+        return f'Team {self.team_id} - {self.doctor.name}'
+
 
 class OffRequest(models.Model):
     TYPE_CHOICES = [
@@ -58,6 +66,23 @@ class Roster(models.Model):
         return f"Roster for {self.date}"
 
 class AlgoPlan(models.Model):
+    ALGORITHM_CHOICES = [
+        ('full', 'Full'),
+        ('half', 'Half'),
+    ]
+    
+    month = models.PositiveSmallIntegerField()
+    year = models.PositiveIntegerField()
+    algorithm = models.CharField(max_length=4, choices=ALGORITHM_CHOICES)
+
+    class Meta:
+        unique_together = ('month', 'year', 'algorithm')
+
+    
+    def __str__(self):
+        return f"{self.get_algorithm_display()} - {self.month}/{self.year}"
+
+class AlgoPlan_archives(models.Model):
     ALGORITHM_CHOICES = [
         ('full', 'Full'),
         ('half', 'Half'),
