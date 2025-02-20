@@ -1,7 +1,7 @@
 # shiftwise_backend_app/serializers.py
 
 from rest_framework import serializers
-from .models import Doctor, Team, OffRequest, Roster, AlgoPlan
+from .models import Doctor, Team, OffRequest, Roster, AlgoPlan, Team_backup, AlgoPlan_archives
 
 class DoctorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,6 +25,14 @@ class TeamSerializer(serializers.ModelSerializer):
             'doctor',
             'scheduling_half',
         ] 
+class TeamBackupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Team_backup
+        fields = [
+            'team_id',
+            'doctor',
+            'scheduling_half',
+        ] 
 
 class OffRequestSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='doctor.name', read_only=True)
@@ -41,4 +49,9 @@ class RosterSerializer(serializers.ModelSerializer):
 class AlgoPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = AlgoPlan
+        fields = '__all__'
+
+class AlgoPlanArchiveSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AlgoPlan_archives
         fields = '__all__'
