@@ -75,8 +75,8 @@ class AlgoPlan(models.Model):
     year = models.PositiveIntegerField()
     algorithm = models.CharField(max_length=4, choices=ALGORITHM_CHOICES)
 
-    class Meta:
-        unique_together = ('month', 'year', 'algorithm')
+    # class Meta:
+    #     unique_together = ('month', 'year', 'algorithm')
 
     
     def __str__(self):
