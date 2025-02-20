@@ -1,7 +1,7 @@
 import datetime
 import calendar
 import random
-import pandas as pd
+# import pandas as pd
 import os
 
 random.seed(12)
@@ -86,39 +86,39 @@ def get_next_shift(day,shift, max_days,step =1):
         return -1,-1
     return day,shift
 
-def create_shift_schedule_excel(schedule_data, month, year, output_folder="../outputs"):
-    # Ensure the output folder exists
-    if not os.path.exists(output_folder):
-        os.makedirs(output_folder)
+# def create_shift_schedule_excel(schedule_data, month, year, output_folder="../outputs"):
+#     # Ensure the output folder exists
+#     if not os.path.exists(output_folder):
+#         os.makedirs(output_folder)
 
-    # Define the output file name with month and year
-    output_file = os.path.join(output_folder, f"shift_schedule_{month}_{year}.xlsx")
-    dates = []
-    day_shifts = []
-    night_shifts = []
+#     # Define the output file name with month and year
+#     output_file = os.path.join(output_folder, f"shift_schedule_{month}_{year}.xlsx")
+#     dates = []
+#     day_shifts = []
+#     night_shifts = []
     
-    # Loop through the schedule data
-    for day, shifts in schedule_data.items():
-        # Append date (which is day + 1 to match the date)
-        dates.append(day + 1)
+#     # Loop through the schedule data
+#     for day, shifts in schedule_data.items():
+#         # Append date (which is day + 1 to match the date)
+#         dates.append(day + 1)
         
-        # Append the list of doctors for day and night shifts
-        day_shifts.append(", ".join(shifts['day']))  # Convert list to string
-        night_shifts.append(", ".join(shifts['night']))  # Convert list to string
+#         # Append the list of doctors for day and night shifts
+#         day_shifts.append(", ".join(shifts['day']))  # Convert list to string
+#         night_shifts.append(", ".join(shifts['night']))  # Convert list to string
 
-    # Create a DataFrame from the collected data
-    df = pd.DataFrame({
-        'Date': dates,
-        'Day Shift Doctors': day_shifts,
-        'Night Shift Doctors': night_shifts
-    })
+#     # Create a DataFrame from the collected data
+#     df = pd.DataFrame({
+#         'Date': dates,
+#         'Day Shift Doctors': day_shifts,
+#         'Night Shift Doctors': night_shifts
+#     })
     
-    # Save the DataFrame to an Excel file
-    df.to_excel(output_file, index=False)
-    print(f"Shift schedule saved to {output_file}")
+#     # Save the DataFrame to an Excel file
+#     df.to_excel(output_file, index=False)
+#     print(f"Shift schedule saved to {output_file}")
 
 
-def dict_to_excel(data, filename="shift_data.xlsx"):
+# def dict_to_excel(data, filename="shift_data.xlsx"):
     """
     Converts a nested dictionary into a formatted Excel file for user-friendly viewing.
     
