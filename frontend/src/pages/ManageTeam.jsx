@@ -156,7 +156,7 @@ export default function TeamManagement() {
     const submitAlgoPlan = async () =>
     {
       try {
-        await fetch(`${API_BASE_URL}/api/algoplan/create/` {
+        await fetch(`${API_BASE_URL}/api/algoplan/create/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({month: month-1, year: year, algorithm:algo}),
