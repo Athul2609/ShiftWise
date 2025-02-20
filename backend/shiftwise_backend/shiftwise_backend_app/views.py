@@ -20,7 +20,7 @@ from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer,
 from .utils import generate_jwt,generate_otp
 
 # Adjusting the system path for algorithm imports
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../../algorithm')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../algorithm')))
 from main import generate_full_month_roster, generate_full_month_roster_half_by_half
 
 class AlgoPlanCreateView(generics.CreateAPIView):
