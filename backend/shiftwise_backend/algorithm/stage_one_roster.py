@@ -197,7 +197,13 @@ def generate_pick_score(doc_info, day, shift, scheduling_month, scheduling_year)
     
     pick_score+=doc_info["no_of_consecutive_offs"]
 
-    pick_score+=len(doc_info["off_requested"])-(doc_info["no_of_leaves"]/2)
+    for off_day in doc_info["off_requested"]:
+        if off_day == day + 4:
+            pick_score += 1
+        elif off_day == day + 3:
+            pick_score += 2
+        elif off_day == day + 2:
+            pick_score += 3
 
     return pick_score
 
