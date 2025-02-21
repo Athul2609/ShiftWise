@@ -97,7 +97,7 @@ const Admin = () => {
   };
 
   return (
-    <div className="p-4 font-outfit bg-[#7FA1C3] flex flex-col justify-center items-center">
+    <div className="p-4 font-outfit bg-[#7FA1C3] flex flex-col min-h-screen h-full justify-center items-center">
       <h1 className="text-2xl font-semibold text-center mb-4 text-[#F5EDED]">DOCTOR MANAGEMENT</h1>
       <div className="mt-4 flex flex-row-reverse w-4/5 py-2">
         {editMode ? (
