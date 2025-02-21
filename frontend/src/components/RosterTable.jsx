@@ -80,7 +80,7 @@ export default function RosterTable() {
       return response.json();
     })
     .then((data) => {
-    if(data)
+    if(data && data[0])
     {      
       if(data[0].scheduling_half === 0)
       {
