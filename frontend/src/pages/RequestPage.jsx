@@ -130,10 +130,22 @@ const RequestPage = () => {
     setLoading(false);
   }, []);
 
+  if (!done) 
+    {
+        return  <div className='bg-[#7FA1C3] h-screen flex justify-center'>
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                  <div className="flex flex-col items-center">
+                    <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+                    <p className="mt-4 text-lg text-white">Loading...</p>
+                  </div>
+                </div>
+                </div>
+    }
+
   return (
     <div className='bg-[#7FA1C3] h-screen flex justify-center'>
       {
-        (done && done.length !== 0)  ?
+        (done.length !== 0)  ?
         <div className="w-[80vw] flex flex-col items-center">
           <h1 className="text-2xl font-bold font-outfit mb-4" style={{ color: '#E2DAD6' }}>Calendar</h1>
           <Calendar
