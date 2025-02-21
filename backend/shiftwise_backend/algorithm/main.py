@@ -17,19 +17,27 @@ def generate_half_month_roster(teams,doctor_input_details, scheduling_half, sche
     #scheduling_half, scheduling_month, num_days, scheduling_year = (1,1,15,2025)#get_next_half_month_info()
     docs_info,docs_info_history,roster=create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year, scheduling_half, docs_info)
     if not roster:
-        return None,None
-    roster, docs_info=create_stage_two_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster, scheduling_half)
-    return roster, docs_info
+        return None,None, None
+    # roster, docs_info=create_stage_two_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster, scheduling_half)
+    return roster, docs_info, docs_info_history
 
 def generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,teams_first_half, teams_second_half, doctor_input_details):
     # scheduling_month, num_days, scheduling_year=get_next_month_scheduling_info()
-    roster_first_half, docs_info = generate_half_month_roster(teams_first_half, doctor_input_details, 1, scheduling_month, 15, scheduling_year)
+    roster_first_half, docs_info, docs_info_history_first_half = generate_half_month_roster(teams_first_half, doctor_input_details, 1, scheduling_month, 15, scheduling_year)
     if not roster_first_half:
         return None,None
-    roster_second_half, docs_info = generate_half_month_roster(teams_second_half, doctor_input_details, 2, scheduling_month, num_days-15, scheduling_year, docs_info)
+    roster_second_half, docs_info, docs_info_history_second_half = generate_half_month_roster(teams_second_half, doctor_input_details, 2, scheduling_month, num_days-15, scheduling_year, docs_info)
     if not roster_second_half:
         return None,None
-    return {**roster_first_half,**roster_second_half}, docs_info
+    roster = {**roster_first_half,**roster_second_half}
+    docs_info_history={}
+    for i in docs_info_history_first_half:
+        temp = {**docs_info_history_first_half[i],**docs_info_history_second_half[i]}
+        docs_info_history[i] = temp
+    roster, docs_info=create_stage_two_roster(teams_first_half, doctor_input_details, scheduling_month, num_days, scheduling_year,docs_info,docs_info_history,roster)
+    if not roster:
+        return None,None
+    return roster, docs_info
 
 
 if __name__ =="__main__":
@@ -56,7 +64,7 @@ if __name__ =="__main__":
     # ]
 
     teams_first_half = [
-    ["Avinash", "Priya", "Shiva"],
+    ["Avinash", "Priya", "Shiva","Shivray Sharan"],
     ["Deepak", "Midhun", "Likhitha", "Ragini"],
     ["Ashique", "Anas", "Balkrishna"],
     ["Satya", "Sharan", "Akhilesh",],
@@ -64,9 +72,9 @@ if __name__ =="__main__":
 
     teams_second_half = [
     ["Avinash", "Priya", "Shiva"],
-    ["Deepak", "Midhun", "Likhitha"],
+    ["Deepak", "Midhun", "Shivray Sharan"],
     ["Ashique", "Anas", "Balkrishna", "Ragini"],
-    ["Satya", "Sharan", "Akhilesh"],
+    ["Satya", "Sharan", "Akhilesh", "Likhitha"],
     ]
 
     doctor_input_details = {
@@ -171,8 +179,8 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [],
-        'no_of_leaves': 15
+        'off_dates': [1,2,3,4,5,6,7,8,9,10],
+        'no_of_leaves': 10
     },
     'Likhitha': {
         'no_of_consecutive_working_days': 0,
@@ -339,11 +347,11 @@ if __name__ =="__main__":
     #                             }
     #                     }
 
-    scheduling_month, num_days, scheduling_year=[1,28,2025]
+    scheduling_month, num_days, scheduling_year=[3,31,2025]
 
     roster,_=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,teams_first_half, teams_second_half, doctor_input_details)
+    print(roster)
+    # # roster,_=generate_full_month_roster(teams, doctor_input_details)
+    # dict_to_excel(_)
 
-    # roster,_=generate_full_month_roster(teams, doctor_input_details)
-    dict_to_excel(_)
-
-    create_shift_schedule_excel(roster,scheduling_month,scheduling_year)
+    # create_shift_schedule_excel(roster,scheduling_month,scheduling_year)
