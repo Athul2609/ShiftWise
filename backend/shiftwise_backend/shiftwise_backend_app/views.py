@@ -414,8 +414,8 @@ def send_otp(request):
     # Send the OTP via email (configure email settings in settings.py)
     send_mail(
         'Your OTP Code',
-        f'Your OTP code is {otp}',
-        'athul.srinivas.2003@gmail.com',  # sender's email
+        f'Your OTP for ShiftWise is {otp}',
+        'shiftwise.johns@gmail.com',  # sender's email
         [doctor.email],  # receiver's email
         fail_silently=False,
     )
