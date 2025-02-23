@@ -226,7 +226,7 @@ export default function TeamManagement() {
   return (done.length !== 0) ?
   <div className="flex flex-col items-center justify-center min-h-screen h-full bg-[#7FA1C3]">
       <button onClick={handleRosterGenerate} className="text-xl font-semibold text-center mb-4 text-[#6482AD] bg-[#F5EDED] px-3 py-1 rounded hover:text-[#F5EDED] hover:bg-[#6482AD]">GENERATE ROSTER</button>
-      <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month+1}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
+      <h2 className="text-xl font-semibold text-center mb-4 text-[#F5EDED]">Teams for {done[0].month}/{done[0].year} have been set and not yet been used to make the roster, please wait for the roster to be generated before you can make teams for the next month.</h2>
       {loading && 
           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
             <div className="flex flex-col items-center">
