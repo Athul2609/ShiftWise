@@ -413,7 +413,7 @@ def send_otp(request):
 
     # Send the OTP via email (configure email settings in settings.py)
     send_mail(
-        'Your OTP Code',
+        'ShiftWise OTP Code',
         f'Your OTP for ShiftWise is {otp}',
         'shiftwise.johns@gmail.com',  # sender's email
         [doctor.email],  # receiver's email
