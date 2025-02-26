@@ -13,7 +13,12 @@ const RequestPage = () => {
   const [done,setDone] = useState()
   const [loading,setLoading] =  useState(false);
   const { user } = useContext(AuthContext);
-  const doctor_id = user ? user.doctorId : 19;
+  const doctor_id = user && user.doctorId;
+  
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
 
   const handleButtonClick = (button) => {
     setRequestType(button); // Set requestType button on click
@@ -126,7 +131,7 @@ const RequestPage = () => {
     fetch(`${API_BASE_URL}/api/algoplan/`)
     .then((response) => response.json())
     .then((data) => setDone(data))
-    .catch((error) => console.error("Error fetching doctors:", error));
+    .catch((error) => console.error("Error fetching algoplan:", error));
     setLoading(false);
   }, []);
 
@@ -147,10 +152,10 @@ const RequestPage = () => {
       {
         (done.length !== 0)  ?
         <div className="w-[80vw] flex flex-col items-center">
-          <h1 className="text-2xl font-bold font-outfit mb-4" style={{ color: '#E2DAD6' }}>Calendar</h1>
+          <h1 className="text-2xl font-bold font-outfit mb-4" style={{ color: '#E2DAD6' }}>Calendar for {months[done[0].month-1]}, {done[0].year}</h1>
           <Calendar
-            month={1}
-            year={2025}
+            month={done[0].month-1}
+            year={done[0].year}
             selectedDates={selectedDates}
             setSelectedDates={setSelectedDates}
             hoveredDay={hoveredDay}

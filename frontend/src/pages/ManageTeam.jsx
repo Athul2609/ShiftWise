@@ -181,13 +181,21 @@ export default function TeamManagement() {
         console.error("Error submitting teams:", error);
       }
     };
-  
-    Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teamsFH, 1)), submitTeams(formatTeams(teamsSH, 2))])
+
+    const areSetsEqual = (setA, setB) => setA.size === setB.size && [...setA].every(el => setB.has(el));
+
+    if(areSetsEqual(assignedDoctorsFH,assignedDoctorsSH))
+    {    
+      Promise.all([submitAlgoPlan(),submitTeams(formatTeams(teamsFH, 1)), submitTeams(formatTeams(teamsSH, 2))])
       .then(() => {
         setLoading(false)
         setSuccessPopup(true)
       })
       .catch(() => setError("Error submitting teams"));
+    }
+    else{
+      setError("A doctor cannot only be present in one half")
+    }
   };
 
   const handleRosterGenerate = async () =>{

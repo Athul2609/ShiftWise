@@ -233,6 +233,7 @@ class RosterView(APIView):
         Team_backup.objects.bulk_create(team_objects)
         Team.objects.all().delete()
 
+        AlgoPlan_archives.objects.all().delete()
         record = AlgoPlan.objects.first()
         if record:
             data = record.__dict__.copy()
