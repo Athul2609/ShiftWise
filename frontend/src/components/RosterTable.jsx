@@ -1,6 +1,7 @@
 import { useEffect, useState, useContext, useRef } from "react";
 import { AuthContext } from "../App";
 import { API_BASE_URL } from "../config";
+import * as XLSX from "xlsx";
 
 export default function RosterTable() {
   const [roster, setRoster] = useState([]);
@@ -14,9 +15,60 @@ export default function RosterTable() {
   const { user } = useContext(AuthContext);
   const doctor_id = user.doctorId ;
   const shifts=useRef();
+
+  const [done,setDone] = useState();
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
   
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5); // Set default number of rows per page
+
+  const downloadExcel = (roster, teams, doctorIdToName, filename="roster") => {
+    const uniqueTeams = [...new Set(teams.map(team => team.team_id))];
+    const numTeams = uniqueTeams.length;
+
+    // Prepare header rows
+    const headerRow1 = ["Date", "Day Shift", ...Array(numTeams - 1).fill(""), "Night Shift", ...Array(numTeams - 1).fill("")];
+    const headerRow2 = ["", ...uniqueTeams.map((_, i) => `Team ${i + 1}`), ...uniqueTeams.map((_, i) => `Team ${i + 1}`)];
+
+    // Prepare data rows
+    const data = roster.map(entry => {
+        const groupByTeam = (doctorIds) => {
+            const teamMap = {};
+            doctorIds.forEach((doctorId) => {
+                const team = teams.find((t) => t.doctor === doctorId);
+                const teamId = team ? team.team_id : "Unassigned";
+                if (!teamMap[teamId]) teamMap[teamId] = [];
+                teamMap[teamId].push(doctorIdToName[doctorId] || doctorId);
+            });
+            return uniqueTeams.map(teamId => teamMap[teamId] ? teamMap[teamId].join(", ") : "");
+        };
+
+        return [
+            entry.date + 1,
+            ...groupByTeam(entry.day_shift_doctors),
+            ...groupByTeam(entry.night_shift_doctors)
+        ];
+    });
+
+    // Combine headers and data
+    const worksheet = XLSX.utils.aoa_to_sheet([headerRow1, headerRow2, ...data]);
+
+    // Merge cells for Day Shift and Night Shift headers
+    const mergeRanges = [
+        { s: { r: 0, c: 1 }, e: { r: 0, c: numTeams } },  // Merge Day Shift
+        { s: { r: 0, c: numTeams + 1 }, e: { r: 0, c: 2 * numTeams } }  // Merge Night Shift
+    ];
+    worksheet["!merges"] = mergeRanges;
+
+    // Create and save workbook
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Roster");
+    XLSX.writeFile(workbook, `${filename} ${months[done[0].month-1]}, ${done[0].year}.xlsx`);
+};
+
 
   function calculateShifts(doctorId, schedule) {
         let totalShifts = 0;
@@ -100,6 +152,11 @@ export default function RosterTable() {
       setError(error);
       setLoading(false);
     });
+
+    fetch(`${API_BASE_URL}/api/algoplan/archives/`)
+    .then((response) => response.json())
+    .then((data) => setDone(data))
+    .catch((error) => console.error("Error fetching algoplan:", error));
     
   }, []);
 
@@ -128,8 +185,6 @@ export default function RosterTable() {
   // Pagination logic
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  console.log(indexOfFirstRow)
-  console.log(indexOfLastRow)
   const currentRows = roster.slice(indexOfFirstRow, indexOfLastRow);
   const currentRowsFH = roster.slice(indexOfFirstRow, indexOfLastRow>15?15:indexOfLastRow);
   const currentRowsSH = roster.slice(15>indexOfFirstRow?15:indexOfFirstRow, indexOfLastRow);
@@ -144,7 +199,10 @@ export default function RosterTable() {
       (
       <div className="p-4">
           <div className="">
-            <table className="w-full border-collapse rounded-lg overflow-hidden">
+            <div className="w-full flex flex-row-reverse">
+              <button className="bg-[#F5EDED] text-[#6482AD] rounded-lg mb-2 p-2" onClick={()=>downloadExcel(roster,teams,doctorIdToName)}>Download</button>
+            </div>
+            <table className="w-full border-collapse rounded-lg overflow-hidden" id="rosterTable">
                 <thead>
                     <tr className="bg-[#E2DAD6] text-[#6482AD]">
                     <th className="border p-2" rowSpan="2">Date</th>
@@ -241,6 +299,12 @@ export default function RosterTable() {
       :
       (<div>
         <div className="p-4">
+            <div className="w-full flex flex-row-reverse">
+              <button className="bg-[#F5EDED] text-[#6482AD] rounded-lg mb-2 p-2" onClick={()=>{
+                downloadExcel(roster.slice(0,15),teamsFH,doctorIdToName,"roster_first_half")
+                downloadExcel(roster.slice(15),teamsSH,doctorIdToName,"roster_second_half")
+                }}>Downlaod</button>
+            </div>
             {currentRowsFH.length !==0 && <table className="w-full border-collapse rounded-lg overflow-hidden">
                 <thead>
                     <tr className="bg-[#E2DAD6] text-[#6482AD]">
