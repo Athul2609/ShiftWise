@@ -129,32 +129,46 @@ def initialise_docs_info_histroy(num_days,teams, second_half=False):
                 docs_info_history[doctor][day]={}
     return docs_info_history
 
-def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weekend_relaxation=False):
+def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weekend_relaxation=False,verbose=0):
 
     if doc_info["worked_last_shift"] == True:
+        if verbose==1:
+            print("worked last shift")
         return False
 
     # Check the total number of shifts
     if doc_info["total_no_of_shifts"] >= 19:
+        if verbose==1:
+            print("worked 19 shifts already")
         return False
 
     # Check consecutive working days
     if doc_info["no_of_consecutive_working_days"] >= 5:
+        if verbose == 1:
+            print("worked 4 consecutive days")
         return False
 
     # If it's a night shift, check night shift limits
     if shift == "night":
         if doc_info["no_of_consecutive_night_shifts"] >= 2:
+            if verbose == 1:
+                print("Already worked 2 consecutive night shifts")
             return False
         if doc_info["no_of_night_shifts"] >= 10:
+            if verbose ==1:
+                print("Already worked 10 night shifts")
             return False
 
     # If it's a day shift, check day shift limits
     elif shift == "day":
         if doc_info["no_of_day_shifts"] >= 10:
+            if verbose ==1:
+                print("Already worked 10 day shifts")
             return False
 
     if day+1 in doc_info["off_requested"]:
+        if verbose ==1:
+            print("Doctor is on leave")
         return False
 
     if not weekend_relaxation:
@@ -222,7 +236,7 @@ def pick_doctor(eligible_list,docs_info,day, shift, scheduling_month, scheduling
             selected_doctor=doctor
     if selected_doctor==None:
         sys.exit()
-    print(f"{day+1}, {shift}, {selected_doctor}, {max_pick_score}")
+    # print(f"{day+1}, {shift}, {selected_doctor}, {max_pick_score}")
     return selected_doctor
 
 def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shift,scheduling_month, scheduling_year):
@@ -287,6 +301,9 @@ def create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_d
                         docs_info,docs_info_history=update_docs_info([selected_doctor],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
                     else:
                         print(f"{day+1} {shift} {team} no doctor from team was eligible")
+                        for doctor in team:
+                            print(doctor)
+                            check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,weekend_relaxation=True,verbose=1)
                         return docs_info,docs_info_history,None
                 else:
                     temp[shift].extend(compulsory_list)
