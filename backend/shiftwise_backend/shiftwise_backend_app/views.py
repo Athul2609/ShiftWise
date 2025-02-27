@@ -333,9 +333,8 @@ class RosterGenerationCheckView(APIView):
                 date = off_request.date
                 doctor_input_details[doctor_id]["off_dates"].append(date)
                 doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
-                if doctor_id == doctor_id_request:
-                    doctor_input_details[doctor_id]["off_dates"].append(dates_request)
-                    doctor_input_details[doctor_id]["no_of_leaves"]+=no_of_leaves_request
+            doctor_input_details[doctor_id_request]["off_dates"].extend(dates_request)
+            doctor_input_details[doctor_id_request]["no_of_leaves"]+=no_of_leaves_request
 
             roster, docs_info = generate_full_month_roster(scheduling_month, num_days, scheduling_year,teams, doctor_input_details)
         else:
@@ -383,10 +382,8 @@ class RosterGenerationCheckView(APIView):
                 
                 doctor_input_details[doctor_id]["off_dates"].append(date)
                 doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
-                if doctor_id == doctor_id_request:
-                    doctor_input_details[doctor_id]["off_dates"].append(dates_request)
-                    doctor_input_details[doctor_id]["no_of_leaves"]+=no_of_leaves_request
-            
+            doctor_input_details[doctor_id_request]["off_dates"].extend(dates_request)
+            doctor_input_details[doctor_id_request]["no_of_leaves"]+=no_of_leaves_request
             roster, docs_info=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,first_half_teams, second_half_teams, doctor_input_details)
         if roster is None:
             return Response({"result": "false"})
