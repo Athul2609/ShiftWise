@@ -165,7 +165,7 @@ export default function TeamManagement() {
         await fetch(`${API_BASE_URL}/api/algoplan/create/`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({month: month-1, year: year, algorithm:algo}),
+          body: JSON.stringify({month: month, year: year, algorithm:algo}),
         });
       } catch (error) {
         console.error("Error submitting algoPlan:", error);
