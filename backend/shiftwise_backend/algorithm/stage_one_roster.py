@@ -204,7 +204,10 @@ def generate_pick_score(doc_info, day, shift, scheduling_month, scheduling_year)
         elif off_day == day + 3:
             pick_score += 2
         elif off_day == day + 2:
-            pick_score += 3
+            if shift == "night":
+                pick_score += 3
+            else:
+                pick_score -=10
 
     return pick_score
 
@@ -219,6 +222,7 @@ def pick_doctor(eligible_list,docs_info,day, shift, scheduling_month, scheduling
             selected_doctor=doctor
     if selected_doctor==None:
         sys.exit()
+    print(f"{day+1}, {shift}, {selected_doctor}, {max_pick_score}")
     return selected_doctor
 
 def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shift,scheduling_month, scheduling_year):
