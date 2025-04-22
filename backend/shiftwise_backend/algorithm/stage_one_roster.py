@@ -66,21 +66,25 @@ def initialise_docs_info(teams,doctor_input_details):
     for team in teams:
         for doctor in team:
             docs_info[doctor]={
-                "total_no_of_shifts":0,
+                "total_no_of_shifts":doctor_input_details[doctor]["total_no_of_shifts"],
+                "period_no_of_shifts":0,
                 "no_of_consecutive_working_days":doctor_input_details[doctor]["no_of_consecutive_working_days"], #take previous
                 "no_of_consecutive_night_shifts":doctor_input_details[doctor]["no_of_consecutive_night_shifts"], #take previous
-                "no_of_night_shifts":0,
-                "no_of_day_shifts":0,
-                "no_of_working_sundays":0,
-                "no_of_working_saturday":0,
+                "no_of_night_shifts":doctor_input_details[doctor]["no_of_night_shifts"],
+                "period_no_of_night_shifts":0,
+                "no_of_day_shifts":doctor_input_details[doctor]["no_of_day_shifts"],
+                "period_no_of_day_shifts":0,
+                "no_of_working_sundays":doctor_input_details[doctor]["no_of_working_sundays"],
+                "no_of_working_saturday":doctor_input_details[doctor]["no_of_working_saturday"],
                 "no_of_consecutive_offs":doctor_input_details[doctor]["no_of_consecutive_offs"], #take previous
                 "worked_last_shift":doctor_input_details[doctor]["worked_last_shift"], #take previous
                 "off_requested":doctor_input_details[doctor]["off_dates"],
-                "no_of_leaves":doctor_input_details[doctor]["no_of_leaves"]
+                "no_of_leaves":doctor_input_details[doctor]["no_of_leaves"],
+                "period_no_of_leaves":doctor_input_details[doctor]["period_no_of_leaves"]
             }
     return docs_info
 
-def initialise_docs_info_histroy(num_days,teams, second_half=False):
+def initialise_docs_info_histroy(start_date,end_date,teams):
     """
     Initialize a historical tracking structure for doc_info.
 
@@ -125,11 +129,11 @@ def initialise_docs_info_histroy(num_days,teams, second_half=False):
     for team in teams:
         for doctor in team:
             docs_info_history[doctor]={}
-            for day in range(15*second_half,num_days+(15*second_half)):
+            for day in range(start_date,end_date+1):
                 docs_info_history[doctor][day]={}
     return docs_info_history
 
-def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weekend_relaxation=False,verbose=0):
+def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,start_date,end_date,weekend_relaxation=False,verbose=0):
 
     if doc_info["worked_last_shift"] == True:
         if verbose==1:
@@ -140,6 +144,10 @@ def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weeke
     if doc_info["total_no_of_shifts"] >= 19:
         if verbose==1:
             print("worked 19 shifts already")
+        return False
+    if doc_info["period_no_of_shifts"] >= math.ceil((19/30)*(end_date-start_date+1)):
+        if verbose==1:
+            print("worked calculated amount of shifts for the period already")
         return False
 
     # Check consecutive working days
@@ -158,12 +166,20 @@ def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weeke
             if verbose ==1:
                 print("Already worked 10 night shifts")
             return False
+        if doc_info["period_no_of_night_shifts"] >= math.ceil((10/30)*(end_date-start_date+1)):
+            if verbose ==1:
+                print("Already worked number of night shifts for period")
+            return False
 
     # If it's a day shift, check day shift limits
     elif shift == "day":
         if doc_info["no_of_day_shifts"] >= 10:
             if verbose ==1:
                 print("Already worked 10 day shifts")
+            return False
+        if doc_info["period_no_of_day_shifts"] >= math.ceil((10/30)*(end_date-start_date+1)):
+            if verbose ==1:
+                print("Already worked number of day shifts for period")
             return False
 
     if day+1 in doc_info["off_requested"]:
@@ -185,8 +201,8 @@ def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,weeke
     # If none of the conditions disqualify the doctor, they are eligible
     return True
 
-def check_compulsory(doc_info, date, shift, scheduling_month, scheduling_year):
-    if check_eligible(doc_info, date, shift, scheduling_month, scheduling_year, weekend_relaxation=True):
+def check_compulsory(doc_info, date, shift, scheduling_month, scheduling_year, start_date, end_date):
+    if check_eligible(doc_info, date, shift, scheduling_month, scheduling_year, start_date, end_date, weekend_relaxation=True):
         if(doc_info["no_of_consecutive_offs"]==4):
             return True
     return False
@@ -234,8 +250,8 @@ def pick_doctor(eligible_list,docs_info,day, shift, scheduling_month, scheduling
         if score>max_pick_score:
             max_pick_score=score
             selected_doctor=doctor
-    if selected_doctor==None:
-        sys.exit()
+    # if selected_doctor==None:
+    #     sys.exit()
     # print(f"{day+1}, {shift}, {selected_doctor}, {max_pick_score}")
     return selected_doctor
 
@@ -245,14 +261,17 @@ def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shif
         doc_info=docs_info[doctor]
         if doctor in selected_doctors:
             doc_info["total_no_of_shifts"]+=1
+            doc_info["period_no_of_shifts"]+=1
             doc_info["no_of_consecutive_working_days"]+=1
             doc_info["no_of_consecutive_offs"]=0
             doc_info["worked_last_shift"]=True
 
             if shift == "day":
                 doc_info["no_of_day_shifts"]+=1
+                doc_info["period_no_of_day_shifts"]+=1
             else:
                 doc_info["no_of_night_shifts"]+=1
+                doc_info["period_no_of_night_shifts"]+=1
                 doc_info["no_of_consecutive_night_shifts"]+=1
 
             if is_sunday(day,scheduling_month,scheduling_year):
@@ -270,14 +289,13 @@ def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shif
         docs_info[doctor]=doc_info
     return docs_info,docs_info_history
 
-def create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year, scheduling_half=1, docs_info=None):
+def create_stage_one_roster(teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date):
     # scheduling_month, num_days, scheduling_year = get_scheduling_info()
     # scheduling_month, num_days, scheduling_year = (12, 31, 2024)
     roster={}
-    second_half=True if scheduling_half==2 else False
-    docs_info=docs_info if docs_info else initialise_docs_info(teams,doctor_input_details)
-    docs_info_history=initialise_docs_info_histroy(num_days,teams,second_half)
-    for day in range((scheduling_half-1)*15,num_days+((scheduling_half-1)*15)):
+    docs_info=initialise_docs_info(teams,doctor_input_details)
+    docs_info_history=initialise_docs_info_histroy(start_date,end_date,teams)
+    for day in range(start_date,end_date):
         temp={}
         for shift in ["day","night"]:
             temp[shift]=[]
@@ -285,13 +303,13 @@ def create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_d
                 eligible_list=[]
                 compulsory_list=[]
                 for doctor in team:
-                    if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year):
+                    if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,start_date, end_date):
                         eligible_list.append(doctor)
-                    if check_compulsory(docs_info[doctor],day,shift,scheduling_month,scheduling_year):
+                    if check_compulsory(docs_info[doctor],day,shift,scheduling_month,scheduling_year, start_date, end_date):
                         compulsory_list.append(doctor)
                 if not eligible_list:
                     for doctor in team:
-                        if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,weekend_relaxation=True):
+                        if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year, start_date, end_date,weekend_relaxation=True):
                             eligible_list.append(doctor)
                 if not compulsory_list:
                     if eligible_list:

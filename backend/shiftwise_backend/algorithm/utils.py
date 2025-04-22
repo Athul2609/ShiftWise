@@ -6,6 +6,11 @@ import os
 
 random.seed(12)
 
+def last_day_of_month(year, month):
+    # calendar.monthrange returns a tuple (weekday_of_first_day, number_of_days_in_month)
+    _, last_day = calendar.monthrange(year, month)
+    return last_day
+
 def get_next_half_month_info():
     today = datetime.date.today()
     

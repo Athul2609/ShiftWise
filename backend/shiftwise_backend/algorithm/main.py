@@ -3,6 +3,14 @@ from stage_two_roster import create_stage_two_roster
 # from utils import create_shift_schedule_excel, dict_to_excel
 from utils import get_next_month_scheduling_info
 
+def generate_roster(scheduling_month,scheduling_year,start_date,end_date,teams,doctor_input_details):
+    """
+    start_date and end_date are both starting from 1, so they represent the true date not starting from 0
+    """
+    docs_info,docs_info_history, roster=create_stage_one_roster(teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date)
+    roster, docs_info=create_stage_two_roster(teams, doctor_input_details, scheduling_month, start_date, end_date, scheduling_year, docs_info, docs_info_history, roster)
+    return roster, docs_info
+
 def generate_full_month_roster(scheduling_month, num_days, scheduling_year,teams,doctor_input_details):
     # scheduling_month, num_days, scheduling_year=get_next_month_scheduling_info()
     docs_info,docs_info_history,roster=create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_days, scheduling_year)
@@ -167,6 +175,11 @@ if __name__ =="__main__":
         'no_of_leaves': 0
     },
     'Balkrishna': {
+        # "total_no_of_shifts" = 
+        # "no_of_night_shifts" =
+        # "no_of_day_shifts" =
+        # "no_of_working_saturday" = 
+        # "no_of_working_sunday" = 
         'no_of_consecutive_working_days': 0,
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
@@ -192,7 +205,78 @@ if __name__ =="__main__":
     }
 }
 
+    team_sample = [["A","B","C","D"]]
 
+    doctor_input_details = {
+        'A': {
+                "total_no_of_shifts":0,
+                "period_no_of_shifts":0,
+                "no_of_consecutive_working_days":0,
+                "no_of_consecutive_night_shifts":0, 
+                "no_of_night_shifts":0,
+                "period_no_of_night_shifts":0,
+                "no_of_day_shifts":0,
+                "period_no_of_day_shifts":0,
+                "no_of_working_sundays":0,
+                "no_of_working_saturday":0,
+                "no_of_consecutive_offs":0, 
+                "worked_last_shift":False, 
+                "off_dates":[],
+                "no_of_leaves":0,
+                "period_no_of_leaves":0
+        },
+        'B': {
+            "total_no_of_shifts":0,
+                "period_no_of_shifts":0,
+                "no_of_consecutive_working_days":0,
+                "no_of_consecutive_night_shifts":0, 
+                "no_of_night_shifts":0,
+                "period_no_of_night_shifts":0,
+                "no_of_day_shifts":0,
+                "period_no_of_day_shifts":0,
+                "no_of_working_sundays":0,
+                "no_of_working_saturday":0,
+                "no_of_consecutive_offs":0, 
+                "worked_last_shift":False, 
+                "off_dates":[],
+                "no_of_leaves":0,
+                "period_no_of_leaves":0
+        },
+        'C': {
+                "total_no_of_shifts":0,
+                "period_no_of_shifts":0,
+                "no_of_consecutive_working_days":0,
+                "no_of_consecutive_night_shifts":0, 
+                "no_of_night_shifts":0,
+                "period_no_of_night_shifts":0,
+                "no_of_day_shifts":0,
+                "period_no_of_day_shifts":0,
+                "no_of_working_sundays":0,
+                "no_of_working_saturday":0,
+                "no_of_consecutive_offs":0, 
+                "worked_last_shift":False, 
+                "off_dates":[],
+                "no_of_leaves":0,
+                "period_no_of_leaves":0
+        },
+        'D': {
+            "total_no_of_shifts":0,
+                "period_no_of_shifts":0,
+                "no_of_consecutive_working_days":0,
+                "no_of_consecutive_night_shifts":0, 
+                "no_of_night_shifts":0,
+                "period_no_of_night_shifts":0,
+                "no_of_day_shifts":0,
+                "period_no_of_day_shifts":0,
+                "no_of_working_sundays":0,
+                "no_of_working_saturday":0,
+                "no_of_consecutive_offs":0, 
+                "worked_last_shift":False, 
+                "off_dates":[],
+                "no_of_leaves":0,
+                "period_no_of_leaves":0
+        },
+    }
 
     # doctor_input_details={
     #             #   "Dr. A": [3, 4, 5],
@@ -347,9 +431,11 @@ if __name__ =="__main__":
     #                             }
     #                     }
 
-    scheduling_month, num_days, scheduling_year=[3,31,2025]
+    # scheduling_month, num_days, scheduling_year=[3,31,2025]
 
-    roster,_=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,teams_first_half, teams_second_half, doctor_input_details)
+    roster,_ =generate_roster(3,2025,3,16,team_sample,doctor_input_details)
+
+    # roster,_=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,teams_first_half, teams_second_half, doctor_input_details)
     print(roster)
     # # roster,_=generate_full_month_roster(teams, doctor_input_details)
     # dict_to_excel(_)
