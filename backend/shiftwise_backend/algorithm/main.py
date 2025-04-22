@@ -155,7 +155,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [],
+        'off_dates': [1,2,3,4],
         'no_of_leaves': 0
     },
     'Anas': {
@@ -163,7 +163,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [],
+        'off_dates': [1,2,3,4],
         'no_of_leaves': 0
     },
     'Balkrishna': {
@@ -171,7 +171,7 @@ if __name__ =="__main__":
         'no_of_consecutive_night_shifts': 0,
         'no_of_consecutive_offs': 0,
         'worked_last_shift': False,
-        'off_dates': [],
+        'off_dates': [1,2,3,4,5,6],
         'no_of_leaves': 0
     },
     'Shivray Sharan': {

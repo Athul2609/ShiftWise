@@ -300,11 +300,13 @@ def create_stage_one_roster(teams, doctor_input_details, scheduling_month, num_d
                         temp[shift].append(selected_doctor)
                         docs_info,docs_info_history=update_docs_info([selected_doctor],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
                     else:
+                        temp[shift].append("")
                         print(f"{day+1} {shift} {team} no doctor from team was eligible")
-                        for doctor in team:
-                            print(doctor)
-                            check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,weekend_relaxation=True,verbose=1)
-                        return docs_info,docs_info_history,None
+                        docs_info,docs_info_history=update_docs_info([],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
+                        # for doctor in team:
+                            # print(doctor)
+                            # check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,weekend_relaxation=True,verbose=1)
+                        # return docs_info,docs_info_history,None
                 else:
                     temp[shift].extend(compulsory_list)
                     docs_info,docs_info_history=update_docs_info(compulsory_list,docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
