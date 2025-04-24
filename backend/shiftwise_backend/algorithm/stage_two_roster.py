@@ -6,6 +6,7 @@ def verify_min_shift_criteria(doc_info, start_date, end_date, scheduling_month,s
     no_of_leaves = doc_info["no_of_leaves"]
     period_no_of_leaves =  doc_info["period_no_of_leaves"]
     min_criteria_period=math.ceil((17/30)*(end_date-start_date+1))
+    min_criteria=17
     if no_of_leaves>2:
         reduction=math.ceil(no_of_leaves/2)-1
         min_criteria=17-reduction
@@ -42,6 +43,9 @@ def generate_working_options(doctor,doc_info_history,doc_info,roster,scheduling_
                     "off_requested":doc_info["off_requested"],
                     "no_of_leaves":doc_info["no_of_leaves"],
                     "period_no_of_leaves":doc_info["period_no_of_leaves"],
+                    "dependent":doc_info["dependent"],
+                    "dep_start":doc_info["dep_start"],
+                    "dep_end":doc_info["dep_end"]
                 }
                 if check_eligible(modified_doc_info,day,shift,scheduling_month,scheduling_year, start_date, end_date) and check_eligible_future(modified_doc_info,doc_info_history,day,shift, start_date, end_date):
                     working_options.append([day,shift])
@@ -63,9 +67,6 @@ def second_stage_update_doc_info(doctor,docs_info,docs_info_history,day,shift,sc
         doc_info_histroy["no_of_consecutive_offs"]=0 # not really used so don't bother
     doc_info["total_no_of_shifts"]+=1
     doc_info["period_no_of_shifts"]+=1
-
-
-
     if shift == "day":
         doc_info["no_of_day_shifts"]+=1
         doc_info["period_no_of_day_shifts"]+=1

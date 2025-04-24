@@ -68,14 +68,14 @@ def get_next_month_scheduling_info():
 
 def is_saturday(day, scheduling_month, scheduling_year):
     # Create a date object for the given day, month, and year
-    date = datetime.date(scheduling_year, scheduling_month, day+1)
+    date = datetime.date(scheduling_year, scheduling_month, day)
     
     # Check if the day is a Saturday
     return date.weekday() == 5  # 5 corresponds to Saturday in Python's weekday() method
 
 def is_sunday(day, scheduling_month, scheduling_year):
     # Create a date object for the given day, month, and year
-    date = datetime.date(scheduling_year, scheduling_month, day+1)
+    date = datetime.date(scheduling_year, scheduling_month, day)
     
     # Check if the day is a sunday
     return date.weekday() == 6  # 5 corresponds to sunday in Python's weekday() method
@@ -121,7 +121,6 @@ def get_next_shift(day,shift, max_days,step =1):
 #     # Save the DataFrame to an Excel file
 #     df.to_excel(output_file, index=False)
 #     print(f"Shift schedule saved to {output_file}")
-
 
 # def dict_to_excel(data, filename="shift_data.xlsx"):
     """

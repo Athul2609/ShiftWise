@@ -9,58 +9,7 @@ random.seed(12)
 
 def initialise_docs_info(teams,doctor_input_details):
     """
-    Initialize doc_info for all doctors in the provided teams.
-
-    This function creates a dictionary containing doc_info for 
-    each doctor.
-
-    Args:
-        teams (list of list of str): A 2D list where each inner list represents a team, 
-                                     and each element in the inner list is a doctor's name.
-        doctor_input_details (dict): A dictionary where keys are doctor names, and values are lists 
-                             of days in the month that the doctor has requested off.
-
-    Returns:
-        dict: A dictionary where each key is a doctor's name, and the value is another 
-              dictionary containing the following fields:
-              - "total_no_of_shifts" (int): Total number of shifts assigned.
-              - "no_of_consecutive_working_days" (int): Number of consecutive working days.
-              - "no_of_consecutive_night_shifts" (int): Number of consecutive night shifts.
-              - "no_of_night_shifts" (int): Total number of night shifts.
-              - "no_of_day_shifts" (int): Total number of day shifts.
-              - "no_of_working_sundays" (int): Total number of Sundays worked.
-              - "no_of_working_saturday" (int): Total number of Saturdays worked.
-              - "no_of_consecutive_offs" (int): Number of consecutive off days.
-              - "worked_last_shift" (bool): Whether the doctor worked the last shift.
-              - "off_requested" (list): Days of the month the doctor has requested off.
-
-    Example:
-        teams = [["Dr. Smith", "Dr. Jones"], ["Dr. Patel", "Dr. Lee"]]
-        off_requests = {
-            "Dr. Smith": [1, 15],
-            "Dr. Lee": [10, 20]
-        }
-
-        docs_info = initialise_docs_info(teams, off_requests)
-
-        # Result:
-        # {
-        #     "Dr. Smith": {
-        #         "total_no_of_shifts": 0,
-        #         "no_of_consecutive_working_days": 0,
-        #         "no_of_consecutive_night_shifts": 0,
-        #         "no_of_night_shifts": 0,
-        #         "no_of_day_shifts": 0,
-        #         "no_of_working_sundays": 0,
-        #         "no_of_working_saturday": 0,
-        #         "no_of_consecutive_offs": 0,
-        #         "worked_last_shift": False,
-        #         "off_requested": [1, 15]
-        #     },
-        #     "Dr. Jones": {
-        #         ...
-        #     }
-        # }
+    Some values which we need from the previous periods along with offs and leaves are present in doctor_input_details
     """
     docs_info={}
     for team in teams:
@@ -76,54 +25,36 @@ def initialise_docs_info(teams,doctor_input_details):
                 "period_no_of_day_shifts":0,
                 "no_of_working_sundays":doctor_input_details[doctor]["no_of_working_sundays"],
                 "no_of_working_saturday":doctor_input_details[doctor]["no_of_working_saturday"],
-                "no_of_consecutive_offs":doctor_input_details[doctor]["no_of_consecutive_offs"], #take previous
-                "worked_last_shift":doctor_input_details[doctor]["worked_last_shift"], #take previous
-                "off_requested":doctor_input_details[doctor]["off_dates"],
+                "no_of_consecutive_offs":doctor_input_details[doctor]["no_of_consecutive_offs"],
+                "worked_last_shift":doctor_input_details[doctor]["worked_last_shift"],
+                "off_requested":doctor_input_details[doctor]["off_requested"],
                 "no_of_leaves":doctor_input_details[doctor]["no_of_leaves"],
-                "period_no_of_leaves":doctor_input_details[doctor]["period_no_of_leaves"]
+                "period_no_of_leaves":doctor_input_details[doctor]["period_no_of_leaves"],
+                "dependent":doctor_input_details[doctor]["dependent"],
+                "dep_start":doctor_input_details[doctor]["dep_start"],
+                "dep_end":doctor_input_details[doctor]["dep_end"]
             }
     return docs_info
 
 def initialise_docs_info_histroy(start_date,end_date,teams):
     """
     Initialize a historical tracking structure for doc_info.
-
-    This function creates a nested dictionary to store daily doc_info
-    for each doctor over a specified number of days in the 
-    scheduling month. Each doctor has a dictionary(to store doc_info) for each day and their shifts.
-
-    Args:
-        num_days (int): The number of days in the scheduling month.
-        teams (list of list of str): A 2D list where each inner list represents a team, 
-                                     and each element in the inner list is a doctor's name.
-
-    Returns:
-        dict: A dictionary where each key is a doctor's name, and the value is another 
-              dictionary with keys representing the days of the month (0-indexed). 
-              Each day's value is an empty dictionary, ready to store information.
-
-    Example:
-        num_days = 30
-        teams = [["Dr. Smith", "Dr. Jones"], ["Dr. Patel", "Dr. Lee"]]
-
-        docs_info_history = initialise_docs_info_history(num_days, teams)
-
-        # Result:
-        # {
-        #     "Dr. Smith": {
-        #         0: {},
-        #         1: {},
-        #         ...
-        #         29: {}
-        #     },
-        #     "Dr. Jones": {
-        #         0: {},
-        #         1: {},
-        #         ...
-        #         29: {}
-        #     },
-        #     ...
-        # }
+        Result:
+        {
+            "Dr. Smith": {
+                0: {},
+                1: {},
+                ...
+                29: {}
+            },
+            "Dr. Jones": {
+                0: {},
+                1: {},
+                ...
+                29: {}
+            },
+            ...
+        }
     """
     docs_info_history={}
     for team in teams:
@@ -133,8 +64,11 @@ def initialise_docs_info_histroy(start_date,end_date,teams):
                 docs_info_history[doctor][day]={}
     return docs_info_history
 
-def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,start_date,end_date,weekend_relaxation=False,verbose=0):
-
+def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,start_date,end_date,dependent_allowed=False,weekend_relaxation=False,verbose=0):
+    if not dependent_allowed:
+        if doc_info["dependent"] and day in range(doc_info["dep_start"],doc_info["dep_end"]+1):
+            return False
+    
     if doc_info["worked_last_shift"] == True:
         if verbose==1:
             print("worked last shift")
@@ -201,8 +135,8 @@ def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,start
     # If none of the conditions disqualify the doctor, they are eligible
     return True
 
-def check_compulsory(doc_info, date, shift, scheduling_month, scheduling_year, start_date, end_date):
-    if check_eligible(doc_info, date, shift, scheduling_month, scheduling_year, start_date, end_date, weekend_relaxation=True):
+def check_compulsory(doc_info, date, shift, scheduling_month, scheduling_year, start_date, end_date,dependent_allowed=False):
+    if check_eligible(doc_info, date, shift, scheduling_month, scheduling_year, start_date, end_date,dependent_allowed, weekend_relaxation=True):
         if(doc_info["no_of_consecutive_offs"]==4):
             return True
     return False
@@ -250,12 +184,9 @@ def pick_doctor(eligible_list,docs_info,day, shift, scheduling_month, scheduling
         if score>max_pick_score:
             max_pick_score=score
             selected_doctor=doctor
-    # if selected_doctor==None:
-    #     sys.exit()
-    # print(f"{day+1}, {shift}, {selected_doctor}, {max_pick_score}")
     return selected_doctor
 
-def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shift,scheduling_month, scheduling_year):
+def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shift,scheduling_month, scheduling_year): 
     for doctor in team:
         docs_info_history[doctor][day][shift] = copy.deepcopy(docs_info[doctor])
         doc_info=docs_info[doctor]
@@ -290,18 +221,17 @@ def update_docs_info(selected_doctors,docs_info, docs_info_history,team,day,shif
     return docs_info,docs_info_history
 
 def create_stage_one_roster(teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date):
-    # scheduling_month, num_days, scheduling_year = get_scheduling_info()
-    # scheduling_month, num_days, scheduling_year = (12, 31, 2024)
     roster={}
     docs_info=initialise_docs_info(teams,doctor_input_details)
     docs_info_history=initialise_docs_info_histroy(start_date,end_date,teams)
-    for day in range(start_date,end_date):
+    for day in range(start_date,end_date+1):
         temp={}
         for shift in ["day","night"]:
             temp[shift]=[]
             for team in teams:
                 eligible_list=[]
                 compulsory_list=[]
+                selected_doctors=[]
                 for doctor in team:
                     if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,start_date, end_date):
                         eligible_list.append(doctor)
@@ -313,20 +243,35 @@ def create_stage_one_roster(teams, doctor_input_details, scheduling_month, sched
                             eligible_list.append(doctor)
                 if not compulsory_list:
                     if eligible_list:
-                        # selected_doctor=random.choice(eligible_list)
                         selected_doctor=pick_doctor(eligible_list,docs_info,day, shift, scheduling_month, scheduling_year)
                         temp[shift].append(selected_doctor)
-                        docs_info,docs_info_history=update_docs_info([selected_doctor],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
+                        selected_doctors.append(selected_doctor)
+                        # docs_info,docs_info_history=update_docs_info([selected_doctor],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
                     else:
                         temp[shift].append("")
                         print(f"{day+1} {shift} {team} no doctor from team was eligible")
-                        docs_info,docs_info_history=update_docs_info([],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
-                        # for doctor in team:
-                            # print(doctor)
-                            # check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,weekend_relaxation=True,verbose=1)
-                        # return docs_info,docs_info_history,None
+                        # docs_info,docs_info_history=update_docs_info([],docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
                 else:
                     temp[shift].extend(compulsory_list)
+                    selected_doctors.extend(compulsory_list)
                     docs_info,docs_info_history=update_docs_info(compulsory_list,docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
+                dependent_eligible_list=[]
+                dependent_compulsory_list=[]
+                for doctor in team:
+                    if docs_info[doctor]["dependent"]:
+                        if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,start_date, end_date,dependent_allowed=True,weekend_relaxation=True):
+                            dependent_eligible_list.append(doctor)
+                        if check_compulsory(docs_info[doctor],day,shift,scheduling_month,scheduling_year, start_date, end_date,dependent_allowed=True):
+                            dependent_compulsory_list.append(doctor)
+                if not dependent_compulsory_list:
+                    if dependent_eligible_list:
+                        selected_doctor=pick_doctor(dependent_eligible_list,docs_info,day, shift, scheduling_month, scheduling_year)
+                        temp[shift].append(selected_doctor)
+                        selected_doctors.append(selected_doctor)
+                    docs_info,docs_info_history=update_docs_info(selected_doctors,docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
+                else:
+                    temp[shift].extend(dependent_compulsory_list)
+                    selected_doctors.extend(dependent_compulsory_list)
+                    docs_info,docs_info_history=update_docs_info(selected_doctors,docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
         roster[day]=temp
     return docs_info,docs_info_history,roster
