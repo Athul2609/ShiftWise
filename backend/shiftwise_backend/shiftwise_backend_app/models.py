@@ -13,9 +13,20 @@ class Doctor(models.Model):
     no_of_consecutive_night_shifts = models.IntegerField(default=0)  
     no_of_consecutive_offs = models.IntegerField(default=0)  
     worked_last_shift = models.BooleanField(default=False)
+    total_no_of_shifts = models.IntegerField(default=0)
+    no_of_night_shifts = models.IntegerField(default=0)
+    no_of_day_shifts = models.IntegerField(default=0)
+    no_of_leaves = models.IntegerField(default=0)
+    no_of_working_sundays = models.IntegerField(default=0)
+    no_of_working_saturday = models.IntegerField(default=0)
 
-    def __str__(self):
-        return self.name
+
+class AlgoPlan(models.Model):
+    roster_id = models.AutoField(primary_key=True)
+    month = models.PositiveSmallIntegerField()
+    year = models.PositiveIntegerField()
+    start_date = models.PositiveSmallIntegerField()
+    end_date = models.PositiveSmallIntegerField()
 
 class OTP(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
@@ -27,20 +38,8 @@ class OTP(models.Model):
 
 class Team(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    roster_id = models.ForeignKey(AlgoPlan, on_delete=models.CASCADE)
     team_id = models.CharField(max_length=50)
-    scheduling_half = models.IntegerField(default=0)
-
-    def __str__(self):
-        return f'Team {self.team_id} - {self.doctor.name}'
-
-class Team_backup(models.Model):
-    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
-    team_id = models.CharField(max_length=50)
-    scheduling_half = models.IntegerField(default=0)
-
-    def __str__(self):
-        return f'Team {self.team_id} - {self.doctor.name}'
-
 
 class OffRequest(models.Model):
     TYPE_CHOICES = [
@@ -49,52 +48,29 @@ class OffRequest(models.Model):
     ]
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     date = models.IntegerField()
+    month = models.PositiveSmallIntegerField()
+    year = models.PositiveIntegerField()
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='off')
 
-    class Meta:
-        unique_together = ('doctor', 'date')
-
-    def __str__(self):
-        return f'Off request for {self.doctor.name} on {self.date}'
     
 class Roster(models.Model):
+    roster_id = models.ForeignKey(AlgoPlan, on_delete=models.CASCADE)
     date = models.IntegerField()
     day_shift_doctors = models.JSONField(default=list)
     night_shift_doctors = models.JSONField(default=list)
 
-    def __str__(self):
-        return f"Roster for {self.date}"
-
-class AlgoPlan(models.Model):
-    ALGORITHM_CHOICES = [
-        ('full', 'Full'),
-        ('half', 'Half'),
-    ]
-    
+class WorkHistory(models.Model):
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     month = models.PositiveSmallIntegerField()
     year = models.PositiveIntegerField()
-    algorithm = models.CharField(max_length=4, choices=ALGORITHM_CHOICES)
+    total_no_of_shifts = models.IntegerField(default=0)
+    no_of_night_shifts = models.IntegerField(default=0)
+    no_of_day_shifts = models.IntegerField(default=0)
+    no_of_leaves = models.IntegerField(default=0)
+    no_of_working_sundays = models.IntegerField(default=0)
+    no_of_working_saturday = models.IntegerField(default=0)
 
-    # class Meta:
-    #     unique_together = ('month', 'year', 'algorithm')
-
-    
-    def __str__(self):
-        return f"{self.get_algorithm_display()} - {self.month}/{self.year}"
-
-class AlgoPlan_archives(models.Model):
-    ALGORITHM_CHOICES = [
-        ('full', 'Full'),
-        ('half', 'Half'),
-    ]
-    
-    month = models.PositiveSmallIntegerField()
-    year = models.PositiveIntegerField()
-    algorithm = models.CharField(max_length=4, choices=ALGORITHM_CHOICES)
-
-    class Meta:
-        unique_together = ('month', 'year', 'algorithm')
-
-    
-    def __str__(self):
-        return f"{self.get_algorithm_display()} - {self.month}/{self.year}"
+class Dependents(models.Model):
+    doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
+    dep_start = models.IntegerField()
+    dep_end = models.IntegerField()

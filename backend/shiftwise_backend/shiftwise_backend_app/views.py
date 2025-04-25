@@ -15,25 +15,91 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .authentication import verify_jwt
-from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan, AlgoPlan_archives, Team_backup
-from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer, RosterSerializer, AlgoPlanSerializer, AlgoPlanArchiveSerializer, TeamBackupSerializer
+from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan, WorkHistory, Dependents
+from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer, RosterSerializer, AlgoPlanSerializer, DependentsSerializer, WorkHistorySerializer
 from .utils import generate_jwt,generate_otp
+
+from datetime import date, datetime, timedelta
 
 # Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../algorithm')))
 from main import generate_full_month_roster, generate_full_month_roster_half_by_half
 
+class AlgoPlanFilterView(generics.ListAPIView):
+    serializer_class = AlgoPlanSerializer
+
+    def get_queryset(self):
+        # Get the current date
+        current_date = datetime.now().date()
+
+        # Calculate the date 3 days after today
+        three_days_after = current_date + timedelta(days=3)
+
+        filtered_plans = AlgoPlan.objects.filter(
+            start_date__gte=three_days_after.day,  
+            end_date__lte=current_date.day         
+        )
+
+        return filtered_plans
+    
 class AlgoPlanCreateView(generics.CreateAPIView):
     queryset = AlgoPlan.objects.all()
     serializer_class = AlgoPlanSerializer
+
+    def perform_create(self, serializer):
+        algo_plan = serializer.save()
+
+        if algo_plan.start_date == 1:
+            # Calculate previous month and year
+            if algo_plan.month == 1:
+                prev_month = 12
+                prev_year = algo_plan.year - 1
+            else:
+                prev_month = algo_plan.month - 1
+                prev_year = algo_plan.year
+
+            doctors = Doctor.objects.all()
+
+            for doctor in doctors:
+                # Save current stats to WorkHistory with previous month/year
+                WorkHistory.objects.create(
+                    doctor=doctor,
+                    month=prev_month,
+                    year=prev_year,
+                    total_no_of_shifts=doctor.total_no_of_shifts,
+                    no_of_night_shifts=doctor.no_of_night_shifts,
+                    no_of_day_shifts=doctor.no_of_day_shifts,
+                    no_of_leaves=doctor.no_of_leaves,
+                    no_of_working_sundays=doctor.no_of_working_sundays,
+                    no_of_working_saturday=doctor.no_of_working_saturday,
+                )
+
+                # Reset doctor's shift data
+                doctor.total_no_of_shifts = 0
+                doctor.no_of_night_shifts = 0
+                doctor.no_of_day_shifts = 0
+                doctor.no_of_leaves = 0
+                doctor.no_of_working_sundays = 0
+                doctor.no_of_working_saturday = 0
+                doctor.save()
 
 class AlgoPlanListView(generics.ListAPIView):
     queryset = AlgoPlan.objects.all()
     serializer_class = AlgoPlanSerializer
 
-class AlgoPlanArchiveListView(generics.ListAPIView):
-    queryset = AlgoPlan_archives.objects.all()
-    serializer_class = AlgoPlanArchiveSerializer
+class DependentsCreateView(generics.CreateAPIView):
+    queryset = Dependents.objects.all()
+    serializer_class = DependentsSerializer
+
+    def create(self, request, *args, **kwargs):
+        # Handle multiple dependent objects
+        serializer = self.get_serializer(data=request.data, many=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_create(self, serializer):
+        serializer.save()
 
 # API to create a new doctor
 class DoctorCreateView(generics.CreateAPIView):
@@ -57,6 +123,10 @@ class DoctorDeleteView(generics.DestroyAPIView):
     serializer_class = DoctorSerializer
     lookup_field = 'doctor_id' 
 
+class DoctorDetailView(generics.RetrieveAPIView):
+    queryset = Doctor.objects.all()
+    serializer_class = DoctorSerializer
+    lookup_field = 'doctor_id'
 
 # API to create multiple teams
 class TeamCreateView(generics.CreateAPIView):
@@ -75,9 +145,22 @@ class TeamListView(generics.ListAPIView):
     queryset = Team.objects.all()
     serializer_class = TeamSerializer
 
-class TeamBackupListView(generics.ListAPIView):
-    queryset = Team_backup.objects.all()
-    serializer_class = TeamBackupSerializer
+class TeamsByRosterView(generics.ListAPIView):
+    serializer_class = TeamSerializer
+
+    def get_queryset(self):
+        roster_id = self.kwargs['roster_id']
+        return Team.objects.filter(roster_id=roster_id)
+
+class DeleteTeamsByRosterView(APIView):
+    def delete(self, request, roster_id):
+        teams_to_delete = Team.objects.filter(roster_id=roster_id)
+        deleted_count = teams_to_delete.count()
+        teams_to_delete.delete()
+        return Response(
+            {"message": f"{deleted_count} team(s) deleted for roster_id {roster_id}."},
+            status=status.HTTP_200_OK
+        )
 
 # API to create off request
 class OffRequestCreateView(generics.CreateAPIView):
@@ -96,16 +179,13 @@ class OffRequestByDateView(generics.ListAPIView):
     def get_queryset(self):
         date = self.kwargs['date']
         return OffRequest.objects.filter(date=date)
+    
+class OffRequestByDoctorView(generics.ListAPIView):
+    serializer_class = OffRequestSerializer
 
-    def get(self, request, *args, **kwargs):
-        # Remove the authentication check for now
-        # doctor_id = verify_jwt(request)
-
-        # If you still want to return a response for unauthenticated users, 
-        # you can skip the authentication block.
-        # For now, we will directly call the parent class's get method.
-        return super().get(request, *args, **kwargs)
-
+    def get_queryset(self):
+        doctor_id = self.kwargs['doctor_id']
+        return OffRequest.objects.filter(doctor_id=doctor_id)
 
 # API to delete off request
 class OffRequestDeleteView(generics.DestroyAPIView):
@@ -121,6 +201,32 @@ class OffRequestDeleteView(generics.DestroyAPIView):
         except OffRequest.DoesNotExist:
             raise Http404("Off request not found.")
 
+class OffRequestsByDateRangeView(APIView):
+    def get(self, request):
+        try:
+            start_year = int(request.query_params.get('start_year'))
+            start_month = int(request.query_params.get('start_month'))
+            start_day = int(request.query_params.get('start_day'))
+
+            end_year = int(request.query_params.get('end_year'))
+            end_month = int(request.query_params.get('end_month'))
+            end_day = int(request.query_params.get('end_day'))
+
+            start_date = date(start_year, start_month, start_day)
+            end_date = date(end_year, end_month, end_day)
+
+            all_requests = OffRequest.objects.all()
+
+            filtered = [
+                req for req in all_requests
+                if start_date <= date(req.year, req.month, req.date) <= end_date
+            ]
+
+            serializer = OffRequestSerializer(filtered, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 # API to generate roster
 class RosterView(APIView):
@@ -389,6 +495,25 @@ class RosterGenerationCheckView(APIView):
             return Response({"result": "false"})
         else:
             return Response({"result": "true"})
+
+class RosterByRosterIDView(generics.ListAPIView):
+    serializer_class = RosterSerializer
+
+    def get_queryset(self):
+        roster_id = self.kwargs['roster_id']
+        return Roster.objects.filter(roster_id=roster_id)
+
+class WorkHistoryByDoctorDateView(generics.RetrieveAPIView):
+    serializer_class = WorkHistorySerializer
+
+    def get_queryset(self):
+        return WorkHistory.objects.all()
+
+    def get_object(self):
+        doctor_id = self.kwargs['doctor_id']
+        month = self.kwargs['month']
+        year = self.kwargs['year']
+        return self.get_queryset().get(doctor_id=doctor_id, month=month, year=year)
 
 @api_view(['POST'])
 def send_otp(request):
