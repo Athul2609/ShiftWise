@@ -13,6 +13,7 @@ from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
 
 from .authentication import verify_jwt
 from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan, WorkHistory, Dependents
@@ -23,7 +24,7 @@ from datetime import date, datetime, timedelta
 
 # Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../algorithm')))
-from main import generate_full_month_roster, generate_full_month_roster_half_by_half
+from main import generate_roster
 
 class AlgoPlanFilterView(generics.ListAPIView):
     serializer_class = AlgoPlanSerializer
@@ -230,155 +231,123 @@ class OffRequestsByDateRangeView(APIView):
 
 # API to generate roster
 class RosterView(APIView):
-
-    def get(self, request):
-        algoplan = AlgoPlan.objects.first()  # Assumes there is always one row
-
-        if algoplan:
-            scheduling_month = algoplan.month
-            scheduling_year = algoplan.year
-            roster_type = algoplan.algorithm
-        num_days=calendar.monthrange(scheduling_year, scheduling_month)[1]
-        if roster_type.lower()=="full":
-            print("we are inside type full")
-            teams_queryset = Team.objects.select_related('doctor').all()
-            off_requests_queryset = OffRequest.objects.select_related('doctor').all()
-
-            teams = []
-            team_dict = {}
-            doctor_input_details ={}
-
-            for team in teams_queryset:
-                doctor_id = team.doctor.doctor_id
-                team_id = team.team_id
-                
-                if doctor_id not in doctor_input_details:
-                    doctor_input_details[doctor_id] = {
-                        'no_of_consecutive_working_days': team.doctor.no_of_consecutive_working_days, 
-                        'no_of_consecutive_night_shifts': team.doctor.no_of_consecutive_night_shifts, 
-                        'no_of_consecutive_offs': team.doctor.no_of_consecutive_offs, 
-                        'worked_last_shift': team.doctor.worked_last_shift, 
-                        'off_requested': [], 
-                        'no_of_leaves': 0
-                    }
-
-                if team_id not in team_dict:
-                    teams.append([])
-                    team_dict[team_id]=len(teams)-1
-                teams[team_dict[team_id]].append(doctor_id)
-                        
-            for off_request in off_requests_queryset:
-                doctor_id = off_request.doctor.doctor_id
-                date = off_request.date
-                doctor_input_details[doctor_id]["off_requested"].append(date)
-                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
-
-            roster, docs_info = generate_full_month_roster(scheduling_month, num_days, scheduling_year,teams, doctor_input_details)
-        else:
-            first_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=1)
-            second_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=2)
-            off_requests_queryset = OffRequest.objects.select_related('doctor').all()
-            first_half_teams = []
-            first_half_team_dict = {}
-            doctor_input_details ={}
-
-            for team in first_half_teams_queryset:
-                doctor_id = team.doctor.doctor_id
-                team_id = team.team_id
-                
-                if doctor_id not in doctor_input_details:
-                    doctor_input_details[doctor_id] = {
-                        'no_of_consecutive_working_days': team.doctor.no_of_consecutive_working_days, 
-                        'no_of_consecutive_night_shifts': team.doctor.no_of_consecutive_night_shifts, 
-                        'no_of_consecutive_offs': team.doctor.no_of_consecutive_offs, 
-                        'worked_last_shift': team.doctor.worked_last_shift, 
-                        'off_requested': [], 
-                        'no_of_leaves': 0
-                    }
-
-                if team_id not in first_half_team_dict:
-                    first_half_teams.append([])
-                    first_half_team_dict[team_id]=len(first_half_teams)-1
-                first_half_teams[first_half_team_dict[team_id]].append(doctor_id)
-            
-            second_half_teams = []
-            second_half_team_dict = {}
-
-            for team in second_half_teams_queryset:
-                doctor_id = team.doctor.doctor_id
-                team_id = team.team_id
-
-                if team_id not in second_half_team_dict:
-                    second_half_teams.append([])
-                    second_half_team_dict[team_id]=len(second_half_teams)-1
-                second_half_teams[second_half_team_dict[team_id]].append(doctor_id)
-
-            for off_request in off_requests_queryset:
-                doctor_id = off_request.doctor.doctor_id
-                date = off_request.date
-                
-                doctor_input_details[doctor_id]["off_requested"].append(date)
-                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
-            
-            roster, docs_info=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,first_half_teams, second_half_teams, doctor_input_details)
-        if roster is None:
-            return Response({"error": "Error generating roster"}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request):
+        roster_id = request.data.get('roster_id')
         
-        Roster.objects.all().delete()
-        OffRequest.objects.all().delete()
+        if not roster_id:
+            return Response({"error": "roster_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 1. Fetch AlgoPlan
+        algo_plan = get_object_or_404(AlgoPlan, roster_id=roster_id)
+        scheduling_month = algo_plan.month
+        scheduling_year = algo_plan.year
+        start_date = algo_plan.start_date
+        end_date = algo_plan.end_date
+        
+        # 2. Fetch Teams
+        team_objs = Team.objects.filter(roster_id=roster_id)
+        teams_dict = {}
+        for team in team_objs:
+            teams_dict.setdefault(team.team_id, []).append(team.doctor.name)
+        
+        teams = list(teams_dict.values())
+        print(teams)
+        
+        # 3. Build doctor_input_details
+        doctors = Doctor.objects.filter(doctor_id__in=[team.doctor.doctor_id for team in team_objs])
+        
+        # Fetch dependents
+        dependent_objs = Dependents.objects.filter(roster_id=roster_id)
+        dependent_map = {dep.doctor.doctor_id: dep for dep in dependent_objs}
+        
+        doctor_input_details = {}
 
-        Team_backup.objects.all().delete()
-        team_objects = []
-        for record in Team.objects.all():
-            data = record.__dict__.copy()
-            data.pop('_state')
-            obj = Team_backup(**data)
-            obj.pk = None 
-            team_objects.append(obj)
-
-        Team_backup.objects.bulk_create(team_objects)
-        Team.objects.all().delete()
-
-        AlgoPlan_archives.objects.all().delete()
-        record = AlgoPlan.objects.first()
-        if record:
-            data = record.__dict__.copy()
-            data.pop('_state')
-            data['id'] = None
-            AlgoPlan_archives.objects.create(**data)
-        AlgoPlan.objects.all().delete()
-
-        for doctor_id, details in docs_info.items():
-            try:
-                # Get the doctor instance by name
-                doctor = Doctor.objects.get(doctor_id=doctor_id)
-                
-                # Update the fields using the nested dictionary
-                doctor.no_of_consecutive_working_days = details.get("no_of_consecutive_working_days", doctor.no_of_consecutive_working_days)
-                doctor.no_of_consecutive_night_shifts = details.get("no_of_consecutive_night_shifts", doctor.no_of_consecutive_night_shifts)
-                doctor.no_of_consecutive_offs = details.get("no_of_consecutive_offs", doctor.no_of_consecutive_offs)
-                doctor.worked_last_shift = details.get("worked_last_shift", doctor.worked_last_shift)
-                
-                # Save the updated doctor instance
-                doctor.save()
-                
-                # print(f"Updated {doctor_id}'s details successfully.")
-            except Doctor.DoesNotExist:
-                print(f"Doctor {doctor_id} does not exist.")
-
-        for date, shifts in roster.items():
-            day_shift_doctors = shifts.get('day', [])
-            night_shift_doctors = shifts.get('night', [])
-
-            # Create or update the Roster entry for the given date
-            Roster.objects.update_or_create(
-                date=date,
-                defaults={
-                    'day_shift_doctors': day_shift_doctors,
-                    'night_shift_doctors': night_shift_doctors,
-                }
+        for doctor in doctors:
+            # Fetch off requests between start_date and end_date
+            off_requests = OffRequest.objects.filter(
+                doctor=doctor,
+                year=scheduling_year,
+                month=scheduling_month,
+                date__gte=start_date,
+                date__lte=end_date,
             )
-        return Response(roster)
+            off_requested_dates = [off.date for off in off_requests]
+            period_no_of_leaves = len(off_requested_dates)
+
+            dep = dependent_map.get(doctor.doctor_id)
+
+            doctor_input_details[doctor.name] = {
+                "total_no_of_shifts": doctor.total_no_of_shifts,
+                "no_of_night_shifts": doctor.no_of_night_shifts,
+                "no_of_day_shifts": doctor.no_of_day_shifts,
+                "no_of_working_sundays": doctor.no_of_working_sundays,
+                "no_of_working_saturday": doctor.no_of_working_saturday,
+                "no_of_leaves": doctor.no_of_leaves,
+                "period_no_of_leaves": period_no_of_leaves,
+                "no_of_consecutive_working_days": doctor.no_of_consecutive_working_days,
+                "no_of_consecutive_night_shifts": doctor.no_of_consecutive_night_shifts,
+                "no_of_consecutive_offs": doctor.no_of_consecutive_offs,
+                "worked_last_shift": doctor.worked_last_shift,
+                "off_requested": off_requested_dates,
+                "dependent": bool(dep),
+                "dep_start": dep.dep_start if dep else 0,
+                "dep_end": dep.dep_end if dep else 0,
+            }
+        print(doctor_input_details)
+
+        # 4. Call generate_roster
+        try:
+            roster_result, doctor_result = generate_roster(
+                scheduling_month,
+                scheduling_year,
+                start_date,
+                end_date,
+                teams,
+                doctor_input_details
+            )
+            
+            # 5. Save the roster into Roster model
+            for day, shifts in roster_result.items():
+                day_shift_doctors = []
+                night_shift_doctors = []
+
+                # Names are given — map back to IDs
+                for doctor_name in shifts.get('day', []):
+                    doc_obj = Doctor.objects.filter(name=doctor_name).first()
+                    if doc_obj:
+                        day_shift_doctors.append(doc_obj.doctor_id)
+                for doctor_name in shifts.get('night', []):
+                    doc_obj = Doctor.objects.filter(name=doctor_name).first()
+                    if doc_obj:
+                        night_shift_doctors.append(doc_obj.doctor_id)
+                
+                Roster.objects.create(
+                    roster_id=algo_plan,
+                    date=day,
+                    day_shift_doctors=day_shift_doctors,
+                    night_shift_doctors=night_shift_doctors,
+                )
+            
+            # 6. Update each doctor model
+            for doctor_name, updated_data in doctor_result.items():
+                doctor_obj = Doctor.objects.filter(name=doctor_name).first()
+                if doctor_obj:
+                    doctor_obj.total_no_of_shifts = updated_data.get('total_no_of_shifts', doctor_obj.total_no_of_shifts)
+                    doctor_obj.no_of_night_shifts = updated_data.get('no_of_night_shifts', doctor_obj.no_of_night_shifts)
+                    doctor_obj.no_of_day_shifts = updated_data.get('no_of_day_shifts', doctor_obj.no_of_day_shifts)
+                    doctor_obj.no_of_working_sundays = updated_data.get('no_of_working_sundays', doctor_obj.no_of_working_sundays)
+                    doctor_obj.no_of_working_saturday = updated_data.get('no_of_working_saturday', doctor_obj.no_of_working_saturday)
+                    doctor_obj.no_of_leaves = updated_data.get('no_of_leaves', doctor_obj.no_of_leaves)
+                    doctor_obj.no_of_consecutive_working_days = updated_data.get('no_of_consecutive_working_days', doctor_obj.no_of_consecutive_working_days)
+                    doctor_obj.no_of_consecutive_night_shifts = updated_data.get('no_of_consecutive_night_shifts', doctor_obj.no_of_consecutive_night_shifts)
+                    doctor_obj.no_of_consecutive_offs = updated_data.get('no_of_consecutive_offs', doctor_obj.no_of_consecutive_offs)
+                    doctor_obj.worked_last_shift = updated_data.get('worked_last_shift', doctor_obj.worked_last_shift)
+                    doctor_obj.save()
+            
+            return Response({"message": "Roster generation completed successfully!"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class RosterListView(APIView):
     """

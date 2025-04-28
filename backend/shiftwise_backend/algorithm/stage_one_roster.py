@@ -258,7 +258,7 @@ def create_stage_one_roster(teams, doctor_input_details, scheduling_month, sched
                 dependent_eligible_list=[]
                 dependent_compulsory_list=[]
                 for doctor in team:
-                    if docs_info[doctor]["dependent"]:
+                    if docs_info[doctor]["dependent"] and day in range(docs_info[doctor]["dep_start"],docs_info[doctor]["dep_end"]+1):
                         if check_eligible(docs_info[doctor],day,shift,scheduling_month,scheduling_year,start_date, end_date,dependent_allowed=True,weekend_relaxation=True):
                             dependent_eligible_list.append(doctor)
                         if check_compulsory(docs_info[doctor],day,shift,scheduling_month,scheduling_year, start_date, end_date,dependent_allowed=True):

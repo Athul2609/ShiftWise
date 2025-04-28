@@ -71,6 +71,7 @@ class WorkHistory(models.Model):
     no_of_working_saturday = models.IntegerField(default=0)
 
 class Dependents(models.Model):
+    roster_id = models.ForeignKey(AlgoPlan, on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     dep_start = models.IntegerField()
     dep_end = models.IntegerField()

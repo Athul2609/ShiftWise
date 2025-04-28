@@ -9,12 +9,12 @@ def generate_roster(scheduling_month,scheduling_year,start_date,end_date,teams,d
     """
     docs_info,docs_info_history, roster=create_stage_one_roster(teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date)
     roster, docs_info=create_stage_two_roster(teams, doctor_input_details, scheduling_month, start_date, end_date, scheduling_year, docs_info, docs_info_history, roster)
+    print(roster)
     return roster, docs_info
 
 if __name__ =="__main__":
 
     team_sample = [["A","B","C","D","E"]]
-
     doctor_input_details = {
         'A': {
                 "total_no_of_shifts":0,
@@ -52,9 +52,9 @@ if __name__ =="__main__":
                 "off_requested":[],
                 "no_of_leaves":0,
                 "period_no_of_leaves":0,
-                "dependent":True,
-                "dep_start":1,
-                "dep_end":10,
+                "dependent":False,
+                "dep_start":0,
+                "dep_end":0,
         },
         'C': {
                 "total_no_of_shifts":0,
@@ -118,19 +118,19 @@ if __name__ =="__main__":
         },
     }
 
-
-    roster,_ =generate_roster(3,2025,1,5,team_sample,doctor_input_details)
-
-    print(roster)
-    roster,_ =generate_roster(3,2025,6,10,team_sample,_)
+    roster,_ =generate_roster(4,2025,20,30,team_sample,doctor_input_details)
 
     print(roster)
-    roster,_ =generate_roster(3,2025,11,15,team_sample,_)
+    # roster,_ =generate_roster(3,2025,6,10,team_sample,_)
 
-    print(roster)
+    # print(roster)
+    # roster,_ =generate_roster(3,2025,11,15,team_sample,_)
 
-    roster,_ =generate_roster(3,2025,16,22,team_sample,_)
+    # print(roster)
 
-    print(roster)
-    roster,_ =generate_roster(3,2025,23,31,team_sample,_)
-    print(roster)
+    # roster,_ =generate_roster(3,2025,16,22,team_sample,_)
+
+    # print(roster)
+    # roster,_ =generate_roster(3,2025,23,31,team_sample,_)
+    # print(roster)
+    # print(_)
