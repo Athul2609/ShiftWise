@@ -59,7 +59,7 @@ def check_eligible_verbose(
             return False, message
 
     # Check if doctor requested this day off
-    if day + 1 in doc_info["off_requested"]:
+    if day in doc_info["off_requested"]:
         if verbose:
             message += f"{doctor} has requested a leave on {date_info}.\n"
         return False, message
@@ -80,6 +80,7 @@ def check_eligible_verbose(
 
     # All checks passed
     return True, message
+
 def check(roster, teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date):
     docs_info=initialise_docs_info(teams,doctor_input_details)
     docs_info_history=initialise_docs_info_histroy(start_date,end_date,teams)
@@ -118,6 +119,6 @@ def check(roster, teams, doctor_input_details, scheduling_month, scheduling_year
                     message+=f"Only dependent doctors are working on {day}, {shift} from team - {team} \n"
                 docs_info,docs_info_history=update_docs_info(eligible_list,docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
     for doctor in docs_info:
-        if verify_min_shift_criteria(docs_info[doctor], start_date, end_date, scheduling_month,scheduling_year):
+        if not verify_min_shift_criteria(docs_info[doctor], start_date, end_date, scheduling_month,scheduling_year):
             message+=f"{doctor} is not satisfying the minimum shift criteria of the period or month\n "
     return message

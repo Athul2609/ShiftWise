@@ -3,7 +3,7 @@ import math
 from utils import last_day_of_month
 
 def verify_min_shift_criteria(doc_info, start_date, end_date, scheduling_month,scheduling_year):
-    no_of_leaves = doc_info["no_of_leaves"]
+    no_of_leaves = doc_info["no_of_leaves"] + doc_info["period_no_of_leaves"]
     period_no_of_leaves =  doc_info["period_no_of_leaves"]
     min_criteria_period=math.ceil((17/30)*(end_date-start_date+1))
     min_criteria=17
@@ -12,7 +12,7 @@ def verify_min_shift_criteria(doc_info, start_date, end_date, scheduling_month,s
         min_criteria=17-reduction
     if period_no_of_leaves>2:
         reduction=math.ceil(period_no_of_leaves/2)-1
-        min_criteria_period=17-reduction
+        min_criteria_period=min_criteria_period-reduction
     if end_date == last_day_of_month(scheduling_year, scheduling_month):
         if(doc_info["total_no_of_shifts"]<min_criteria):
             return False
@@ -118,6 +118,9 @@ def create_stage_two_roster(teams, off_requests,scheduling_month, start_date, en
                 number_of_rep+=1
                 dates_with_extra_doctor[number_of_rep]=[]
                 option_set=[]
+                if len(doc_working_options[doctor]) == 0:
+                    del doc_working_options[doctor]
+                    continue
                 for i in doc_working_options[doctor]:
                     if i not in dates_with_extra_doctor[number_of_rep]:
                         option_set.append(i)

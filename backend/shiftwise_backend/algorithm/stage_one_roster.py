@@ -116,7 +116,7 @@ def check_eligible(doc_info, day, shift, scheduling_month, scheduling_year,start
                 print("Already worked number of day shifts for period")
             return False
 
-    if day+1 in doc_info["off_requested"]:
+    if day in doc_info["off_requested"]:
         if verbose ==1:
             print("Doctor is on leave")
         return False
@@ -274,4 +274,7 @@ def create_stage_one_roster(teams, doctor_input_details, scheduling_month, sched
                     selected_doctors.extend(dependent_compulsory_list)
                     docs_info,docs_info_history=update_docs_info(selected_doctors,docs_info,docs_info_history,team,day,shift,scheduling_month, scheduling_year)
         roster[day]=temp
+    for doctor in docs_info:
+        docs_info_history[doctor][day+1]={}
+        docs_info_history[doctor][day+1]["day"] = copy.deepcopy(docs_info[doctor])          
     return docs_info,docs_info_history,roster
