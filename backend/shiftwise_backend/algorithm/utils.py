@@ -87,6 +87,8 @@ def get_next_shift(day,shift, max_days,step =1):
             shift="day"
         else:
             shift="night"
+    if day==max_days+1 and shift=="day":
+        return day, shift
     if day>max_days:
         return -1,-1
     return day,shift

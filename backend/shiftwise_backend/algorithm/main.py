@@ -18,80 +18,12 @@ def check_roster(roster, teams, doctor_input_details, scheduling_month, scheduli
 
 if __name__ =="__main__":
     team_sample = [['A', 'B', 'C', 'D']]
-    doctor_input_details = {
-                            'A': {
-                                'total_no_of_shifts': 0,
-                                'no_of_night_shifts': 0,
-                                'no_of_day_shifts': 0,
-                                'no_of_working_sundays': 0,
-                                'no_of_working_saturday': 0,
-                                'no_of_leaves': 0,
-                                'period_no_of_leaves': 3,
-                                'no_of_consecutive_working_days': 0,
-                                'no_of_consecutive_night_shifts': 0,
-                                'no_of_consecutive_offs': 0,
-                                'worked_last_shift': False,
-                                'off_requested': [2, 3, 4],
-                                'dependent': True,
-                                'dep_start': 1,
-                                'dep_end': 5
-                            },
-                            'B': {
-                                'total_no_of_shifts': 0,
-                                'no_of_night_shifts': 0,
-                                'no_of_day_shifts': 0,
-                                'no_of_working_sundays': 0,
-                                'no_of_working_saturday': 0,
-                                'no_of_leaves': 0,
-                                'period_no_of_leaves': 3,
-                                'no_of_consecutive_working_days': 0,
-                                'no_of_consecutive_night_shifts': 0,
-                                'no_of_consecutive_offs': 0,
-                                'worked_last_shift': False,
-                                'off_requested': [7, 8, 9],
-                                'dependent': False,
-                                'dep_start': 0,
-                                'dep_end': 0
-                            },
-                            'C': {
-                                'total_no_of_shifts': 0,
-                                'no_of_night_shifts': 0,
-                                'no_of_day_shifts': 0,
-                                'no_of_working_sundays': 0,
-                                'no_of_working_saturday': 0,
-                                'no_of_leaves': 0,
-                                'period_no_of_leaves': 0,
-                                'no_of_consecutive_working_days': 0,
-                                'no_of_consecutive_night_shifts': 0,
-                                'no_of_consecutive_offs': 0,
-                                'worked_last_shift': False,
-                                'off_requested': [],
-                                'dependent': False,
-                                'dep_start': 0,
-                                'dep_end': 0
-                            },
-                            'D': {
-                                'total_no_of_shifts': 0,
-                                'no_of_night_shifts': 0,
-                                'no_of_day_shifts': 0,
-                                'no_of_working_sundays': 0,
-                                'no_of_working_saturday': 0,
-                                'no_of_leaves': 0,
-                                'period_no_of_leaves': 0,
-                                'no_of_consecutive_working_days': 0,
-                                'no_of_consecutive_night_shifts': 0,
-                                'no_of_consecutive_offs': 0,
-                                'worked_last_shift': False,
-                                'off_requested': [],
-                                'dependent': False,
-                                'dep_start': 0,
-                                'dep_end': 0
-                            }
-                        }
+    doctor_input_details ={'A': {'total_no_of_shifts': 5, 'no_of_night_shifts': 2, 'no_of_day_shifts': 3, 'no_of_working_sundays': 1, 'no_of_working_saturday': 1, 'no_of_leaves': 0, 'period_no_of_leaves': 0, 'no_of_consecutive_working_days': 0, 'no_of_consecutive_night_shifts': 0, 'no_of_consecutive_offs': 1, 'worked_last_shift': False, 'off_requested': [], 'dependent': False, 'dep_start': 0, 'dep_end': 0}, 'B': {'total_no_of_shifts': 6, 'no_of_night_shifts': 2, 'no_of_day_shifts': 4, 'no_of_working_sundays': 0, 'no_of_working_saturday': 1, 'no_of_leaves': 0, 'period_no_of_leaves': 0, 'no_of_consecutive_working_days': 2, 'no_of_consecutive_night_shifts': 0, 'no_of_consecutive_offs': 0, 'worked_last_shift': False, 'off_requested': [], 'dependent': False, 'dep_start': 0, 'dep_end': 0}, 'C': {'total_no_of_shifts': 6, 'no_of_night_shifts': 3, 'no_of_day_shifts': 3, 'no_of_working_sundays': 1, 'no_of_working_saturday': 0, 'no_of_leaves': 0, 'period_no_of_leaves': 0, 'no_of_consecutive_working_days': 0, 'no_of_consecutive_night_shifts': 0, 'no_of_consecutive_offs': 1, 'worked_last_shift': False, 'off_requested': [], 'dependent': False, 'dep_start': 0, 'dep_end': 0}, 'D': {'total_no_of_shifts': 6, 'no_of_night_shifts': 3, 'no_of_day_shifts': 3, 'no_of_working_sundays': 0, 'no_of_working_saturday': 1, 'no_of_leaves': 0, 'period_no_of_leaves': 0, 'no_of_consecutive_working_days': 1, 'no_of_consecutive_night_shifts': 1, 'no_of_consecutive_offs': 0, 'worked_last_shift': True, 'off_requested': [], 'dependent': False, 'dep_start': 0, 'dep_end': 0}}
 
     # roster={1: {'day': ['A'], 'night': ['B']}, 2: {'day': ['C', 'E'], 'night': ['D', 'B']}, 3: {'day': ['E'], 'night': ['A', 'D']}, 4: {'day': ['B'], 'night': ['C']}, 5: {'day': ['D', 'A'], 'night': ['E']}, 6: {'day': ['A'], 'night': ['B', 'D']}, 7: {'day': ['C', 'A', 'E'], 'night': ['D']}, 8: {'day': ['E'], 'night': ['A']}, 9: {'day': ['B', 'C'], 'night': ['C']}, 10: {'day': ['D'], 'night': ['E', 'B', 'C']}}
-    roster,_ =generate_roster(4,2025,1,10,team_sample,doctor_input_details)
-    print(check_roster(roster,team_sample,doctor_input_details,4,2025,1,10 ))
+    roster,_ =generate_roster(4,2025,11,20,team_sample,doctor_input_details)
+    print(roster)
+    print(check_roster(roster,team_sample,doctor_input_details,4,2025,11,20 ))
 
     # print(roster)
     # roster,_ =generate_roster(3,2025,6,10,team_sample,_)

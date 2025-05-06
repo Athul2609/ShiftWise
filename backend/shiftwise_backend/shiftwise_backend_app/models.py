@@ -61,8 +61,11 @@ class Roster(models.Model):
 
 class WorkHistory(models.Model):
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
-    month = models.PositiveSmallIntegerField()
-    year = models.PositiveIntegerField()
+    roster_id = models.ForeignKey(AlgoPlan, on_delete=models.CASCADE)
+    no_of_consecutive_working_days = models.IntegerField(default=0)
+    no_of_consecutive_night_shifts = models.IntegerField(default=0)  
+    no_of_consecutive_offs = models.IntegerField(default=0)  
+    worked_last_shift = models.BooleanField(default=False)
     total_no_of_shifts = models.IntegerField(default=0)
     no_of_night_shifts = models.IntegerField(default=0)
     no_of_day_shifts = models.IntegerField(default=0)

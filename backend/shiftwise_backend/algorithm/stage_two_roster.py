@@ -26,7 +26,7 @@ def generate_working_options(doctor,doc_info_history,doc_info,roster,scheduling_
     working_options=[]
     for day in doc_info_history:
         for shift in doc_info_history[day]:
-            if doctor not in roster[day][shift]:
+            if day <= end_date and doctor not in roster[day][shift]:
                 modified_doc_info={
                     "total_no_of_shifts":doc_info["total_no_of_shifts"],
                     "period_no_of_shifts":doc_info["period_no_of_shifts"],

@@ -24,7 +24,7 @@ from datetime import date, datetime, timedelta
 
 # Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../algorithm')))
-from main import generate_roster
+from main import generate_roster, check_roster
 
 class AlgoPlanFilterView(generics.ListAPIView):
     serializer_class = AlgoPlanSerializer
@@ -51,30 +51,9 @@ class AlgoPlanCreateView(generics.CreateAPIView):
         algo_plan = serializer.save()
 
         if algo_plan.start_date == 1:
-            # Calculate previous month and year
-            if algo_plan.month == 1:
-                prev_month = 12
-                prev_year = algo_plan.year - 1
-            else:
-                prev_month = algo_plan.month - 1
-                prev_year = algo_plan.year
-
             doctors = Doctor.objects.all()
 
             for doctor in doctors:
-                # Save current stats to WorkHistory with previous month/year
-                WorkHistory.objects.create(
-                    doctor=doctor,
-                    month=prev_month,
-                    year=prev_year,
-                    total_no_of_shifts=doctor.total_no_of_shifts,
-                    no_of_night_shifts=doctor.no_of_night_shifts,
-                    no_of_day_shifts=doctor.no_of_day_shifts,
-                    no_of_leaves=doctor.no_of_leaves,
-                    no_of_working_sundays=doctor.no_of_working_sundays,
-                    no_of_working_saturday=doctor.no_of_working_saturday,
-                )
-
                 # Reset doctor's shift data
                 doctor.total_no_of_shifts = 0
                 doctor.no_of_night_shifts = 0
@@ -272,6 +251,7 @@ class RosterView(APIView):
                 date__lte=end_date,
             )
             off_requested_dates = [off.date for off in off_requests]
+            print(off_requested_dates)
             period_no_of_leaves = len(off_requested_dates)
 
             dep = dependent_map.get(doctor.doctor_id)
@@ -305,6 +285,24 @@ class RosterView(APIView):
                 teams,
                 doctor_input_details
             )
+            print(3)
+            print(roster_result)
+
+            for doctor in doctors:
+                WorkHistory.objects.create(
+                    doctor=doctor,
+                    roster_id=algo_plan,
+                    no_of_consecutive_working_days = doctor.no_of_consecutive_working_days,
+                    no_of_consecutive_night_shifts = doctor.no_of_consecutive_night_shifts,
+                    no_of_consecutive_offs = doctor.no_of_consecutive_offs,
+                    worked_last_shift = doctor.worked_last_shift,
+                    total_no_of_shifts=doctor.total_no_of_shifts,
+                    no_of_night_shifts=doctor.no_of_night_shifts,
+                    no_of_day_shifts=doctor.no_of_day_shifts,
+                    no_of_leaves=doctor.no_of_leaves,
+                    no_of_working_sundays=doctor.no_of_working_sundays,
+                    no_of_working_saturday=doctor.no_of_working_saturday,
+                )
             
             # 5. Save the roster into Roster model
             for day, shifts in roster_result.items():
@@ -366,104 +364,90 @@ class RosterListView(APIView):
 
 class RosterGenerationCheckView(APIView):
     def post(self, request):
-        doctor_id_request = request.data.get('doctor_id')  # Gets doctor_id
-        dates_request = request.data.get('dates', [])
-        no_of_leaves_request = request.data.get("no_of_leaves",0)
-        algoplan = AlgoPlan.objects.first()  # Assumes there is always one row
-        if algoplan:
-            scheduling_month = algoplan.month
-            scheduling_year = algoplan.year
-            roster_type = algoplan.algorithm
-        num_days=calendar.monthrange(scheduling_year, scheduling_month)[1]
-        if roster_type.lower()=="full":
-            print("we are inside type full")
-            teams_queryset = Team.objects.select_related('doctor').all()
-            off_requests_queryset = OffRequest.objects.select_related('doctor').all()
+        roster_id = request.data.get('roster_id')
+        roster = roster = {int(k): v for k, v in request.data.get('roster', {}).items()}
 
-            teams = []
-            team_dict = {}
-            doctor_input_details ={}
+        if not roster_id:
+            return Response({"error": "roster_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 1. Fetch AlgoPlan
+        algo_plan = get_object_or_404(AlgoPlan, roster_id=roster_id)
+        scheduling_month = algo_plan.month
+        scheduling_year = algo_plan.year
+        start_date = algo_plan.start_date
+        end_date = algo_plan.end_date
+        
+        # 2. Fetch Teams
+        team_objs = Team.objects.filter(roster_id=roster_id)
+        teams_dict = {}
+        for team in team_objs:
+            teams_dict.setdefault(team.team_id, []).append(team.doctor.name)
+        
+        teams = list(teams_dict.values())
 
-            for team in teams_queryset:
-                doctor_id = team.doctor.doctor_id
-                team_id = team.team_id
-                
-                if doctor_id not in doctor_input_details:
-                    doctor_input_details[doctor_id] = {
-                        'no_of_consecutive_working_days': team.doctor.no_of_consecutive_working_days, 
-                        'no_of_consecutive_night_shifts': team.doctor.no_of_consecutive_night_shifts, 
-                        'no_of_consecutive_offs': team.doctor.no_of_consecutive_offs, 
-                        'worked_last_shift': team.doctor.worked_last_shift, 
-                        'off_requested': [], 
-                        'no_of_leaves': 0
-                    }
+        print([type(team.doctor) for team in team_objs])
 
-                if team_id not in team_dict:
-                    teams.append([])
-                    team_dict[team_id]=len(teams)-1
-                teams[team_dict[team_id]].append(doctor_id)
-                        
-            for off_request in off_requests_queryset:
-                doctor_id = off_request.doctor.doctor_id
-                date = off_request.date
-                doctor_input_details[doctor_id]["off_requested"].append(date)
-                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
-            doctor_input_details[doctor_id_request]["off_requested"].extend(dates_request)
-            doctor_input_details[doctor_id_request]["no_of_leaves"]+=no_of_leaves_request
+        # 3. Build doctor_input_details
+        doctors = WorkHistory.objects.filter(
+            roster_id=algo_plan,
+            doctor__in=[team.doctor for team in team_objs]
+        )
 
-            roster, docs_info = generate_full_month_roster(scheduling_month, num_days, scheduling_year,teams, doctor_input_details)
-        else:
-            first_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=1)
-            second_half_teams_queryset = Team.objects.select_related('doctor').filter(scheduling_half=2)
-            off_requests_queryset = OffRequest.objects.select_related('doctor').all()
-            first_half_teams = []
-            first_half_team_dict = {}
-            doctor_input_details ={}
+        # Fetch dependents
+        dependent_objs = Dependents.objects.filter(roster_id=roster_id)
+        dependent_map = {dep.doctor.doctor_id: dep for dep in dependent_objs}
+        
+        doctor_input_details = {}
 
-            for team in first_half_teams_queryset:
-                doctor_id = team.doctor.doctor_id
-                team_id = team.team_id
-                
-                if doctor_id not in doctor_input_details:
-                    doctor_input_details[doctor_id] = {
-                        'no_of_consecutive_working_days': team.doctor.no_of_consecutive_working_days, 
-                        'no_of_consecutive_night_shifts': team.doctor.no_of_consecutive_night_shifts, 
-                        'no_of_consecutive_offs': team.doctor.no_of_consecutive_offs, 
-                        'worked_last_shift': team.doctor.worked_last_shift, 
-                        'off_requested': [], 
-                        'no_of_leaves': 0
-                    }
+        for doctor in doctors:
+            # Fetch off requests between start_date and end_date
+            off_requests = OffRequest.objects.filter(
+                doctor=doctor.doctor,
+                year=scheduling_year,
+                month=scheduling_month,
+                date__gte=start_date,
+                date__lte=end_date,
+            )
+            off_requested_dates = [off.date for off in off_requests]
+            period_no_of_leaves = len(off_requested_dates)
 
-                if team_id not in first_half_team_dict:
-                    first_half_teams.append([])
-                    first_half_team_dict[team_id]=len(first_half_teams)-1
-                first_half_teams[first_half_team_dict[team_id]].append(doctor_id)
+            dep = dependent_map.get(doctor.doctor.doctor_id)
+
+            doctor_input_details[doctor.doctor.name] = {
+                "total_no_of_shifts": doctor.total_no_of_shifts,
+                "no_of_night_shifts": doctor.no_of_night_shifts,
+                "no_of_day_shifts": doctor.no_of_day_shifts,
+                "no_of_working_sundays": doctor.no_of_working_sundays,
+                "no_of_working_saturday": doctor.no_of_working_saturday,
+                "no_of_leaves": doctor.no_of_leaves,
+                "period_no_of_leaves": period_no_of_leaves,
+                "no_of_consecutive_working_days": doctor.no_of_consecutive_working_days,
+                "no_of_consecutive_night_shifts": doctor.no_of_consecutive_night_shifts,
+                "no_of_consecutive_offs": doctor.no_of_consecutive_offs,
+                "worked_last_shift": doctor.worked_last_shift,
+                "off_requested": off_requested_dates,
+                "dependent": bool(dep),
+                "dep_start": dep.dep_start if dep else 0,
+                "dep_end": dep.dep_end if dep else 0,
+            }
+        print(doctor_input_details)
+
+        try:
+            message = check_roster(
+                roster,
+                teams,
+                doctor_input_details,
+                scheduling_month,
+                scheduling_year,
+                start_date,
+                end_date
+            )
             
-            second_half_teams = []
-            second_half_team_dict = {}
+            return Response({"message": message}, status=status.HTTP_200_OK)
 
-            for team in second_half_teams_queryset:
-                doctor_id = team.doctor.doctor_id
-                team_id = team.team_id
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-                if team_id not in second_half_team_dict:
-                    second_half_teams.append([])
-                    second_half_team_dict[team_id]=len(second_half_teams)-1
-                second_half_teams[second_half_team_dict[team_id]].append(doctor_id)
-
-            for off_request in off_requests_queryset:
-                doctor_id = off_request.doctor.doctor_id
-                date = off_request.date
-                
-                doctor_input_details[doctor_id]["off_requested"].append(date)
-                doctor_input_details[doctor_id]["no_of_leaves"] = OffRequest.objects.filter(doctor_id=doctor_id, type='leave').count()
-            doctor_input_details[doctor_id_request]["off_requested"].extend(dates_request)
-            doctor_input_details[doctor_id_request]["no_of_leaves"]+=no_of_leaves_request
-            roster, docs_info=generate_full_month_roster_half_by_half(scheduling_month, num_days, scheduling_year,first_half_teams, second_half_teams, doctor_input_details)
-        if roster is None:
-            return Response({"result": "false"})
-        else:
-            return Response({"result": "true"})
 
 class RosterByRosterIDView(generics.ListAPIView):
     serializer_class = RosterSerializer
