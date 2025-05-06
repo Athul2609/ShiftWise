@@ -25,7 +25,7 @@ from .views import (
     AlgoPlanListView,
     AlgoPlanCreateView,
     AlgoPlanFilterView,
-    WorkHistoryByDoctorDateView,
+    WorkHistoryByRosterIDView,
     send_otp, 
     verify_otp,
 )
@@ -54,7 +54,7 @@ urlpatterns = [
     path('roster/list/', RosterListView.as_view(), name='roster-list'), #checked
     path('roster/check/', RosterGenerationCheckView.as_view(), name='roster-check'),
     path('roster/<int:roster_id>/', RosterByRosterIDView.as_view(), name='rosters-by-roster-id'), #checked
-    path('work-history/<int:doctor_id>/<int:month>/<int:year>/', WorkHistoryByDoctorDateView.as_view(), name='work-history-detail'),
+    path('work-history/<int:roster_id>/',WorkHistoryByRosterIDView.as_view(),name='work-history-by-roster-id'),
     path('send-otp/', send_otp, name='send_otp'),
     path('verify-otp/', verify_otp, name='verify_otp'),
 ]

@@ -456,17 +456,13 @@ class RosterByRosterIDView(generics.ListAPIView):
         roster_id = self.kwargs['roster_id']
         return Roster.objects.filter(roster_id=roster_id)
 
-class WorkHistoryByDoctorDateView(generics.RetrieveAPIView):
+class WorkHistoryByRosterIDView(generics.ListAPIView):
     serializer_class = WorkHistorySerializer
 
     def get_queryset(self):
-        return WorkHistory.objects.all()
+        roster_id = self.kwargs['roster_id']
+        return WorkHistory.objects.filter(roster_id=roster_id)
 
-    def get_object(self):
-        doctor_id = self.kwargs['doctor_id']
-        month = self.kwargs['month']
-        year = self.kwargs['year']
-        return self.get_queryset().get(doctor_id=doctor_id, month=month, year=year)
 
 @api_view(['POST'])
 def send_otp(request):
