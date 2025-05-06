@@ -41,6 +41,9 @@ class Team(models.Model):
     roster_id = models.ForeignKey(AlgoPlan, on_delete=models.CASCADE)
     team_id = models.CharField(max_length=50)
 
+    class Meta:
+        unique_together = ('doctor', 'roster_id')
+
 class OffRequest(models.Model):
     TYPE_CHOICES = [
         ('off', 'Off'),
@@ -51,6 +54,9 @@ class OffRequest(models.Model):
     month = models.PositiveSmallIntegerField()
     year = models.PositiveIntegerField()
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='off')
+
+    class Meta:
+        unique_together = ('doctor', 'date', 'month', 'year')
 
     
 class Roster(models.Model):
@@ -73,8 +79,14 @@ class WorkHistory(models.Model):
     no_of_working_sundays = models.IntegerField(default=0)
     no_of_working_saturday = models.IntegerField(default=0)
 
+    class Meta:
+        unique_together = ('doctor', 'roster_id')
+
 class Dependents(models.Model):
     roster_id = models.ForeignKey(AlgoPlan, on_delete=models.CASCADE)
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE)
     dep_start = models.IntegerField()
     dep_end = models.IntegerField()
+
+    class Meta:
+        unique_together = ('doctor', 'roster_id')
