@@ -121,4 +121,4 @@ def check(roster, teams, doctor_input_details, scheduling_month, scheduling_year
     for doctor in docs_info:
         if not verify_min_shift_criteria(docs_info[doctor], start_date, end_date, scheduling_month,scheduling_year):
             message+=f"{doctor} is not satisfying the minimum shift criteria of the period or month\n "
-    return message
+    return message, docs_info

@@ -13,8 +13,8 @@ def generate_roster(scheduling_month,scheduling_year,start_date,end_date,teams,d
     return roster, docs_info
 
 def check_roster(roster, teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date):
-    message=check(roster, teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date)
-    return message
+    message, docs_info=check(roster, teams, doctor_input_details, scheduling_month, scheduling_year, start_date, end_date)
+    return message, docs_info
 
 if __name__ =="__main__":
     team_sample = [['A', 'B', 'C', 'D']]

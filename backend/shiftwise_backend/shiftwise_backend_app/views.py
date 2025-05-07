@@ -230,7 +230,6 @@ class RosterView(APIView):
             teams_dict.setdefault(team.team_id, []).append(team.doctor.name)
         
         teams = list(teams_dict.values())
-        print(teams)
         
         # 3. Build doctor_input_details
         doctors = Doctor.objects.filter(doctor_id__in=[team.doctor.doctor_id for team in team_objs])
@@ -251,7 +250,6 @@ class RosterView(APIView):
                 date__lte=end_date,
             )
             off_requested_dates = [off.date for off in off_requests]
-            print(off_requested_dates)
             period_no_of_leaves = len(off_requested_dates)
 
             dep = dependent_map.get(doctor.doctor_id)
@@ -273,7 +271,6 @@ class RosterView(APIView):
                 "dep_start": dep.dep_start if dep else 0,
                 "dep_end": dep.dep_end if dep else 0,
             }
-        print(doctor_input_details)
 
         # 4. Call generate_roster
         try:
@@ -285,9 +282,6 @@ class RosterView(APIView):
                 teams,
                 doctor_input_details
             )
-            print(3)
-            print(roster_result)
-
             for doctor in doctors:
                 WorkHistory.objects.create(
                     doctor=doctor,
@@ -433,7 +427,7 @@ class RosterGenerationCheckView(APIView):
         print(doctor_input_details)
 
         try:
-            message = check_roster(
+            message,_ = check_roster(
                 roster,
                 teams,
                 doctor_input_details,
@@ -456,13 +450,176 @@ class RosterByRosterIDView(generics.ListAPIView):
         roster_id = self.kwargs['roster_id']
         return Roster.objects.filter(roster_id=roster_id)
 
+class RosterUpdateView(APIView):
+    def post(self, request):
+        roster_id = request.data.get('roster_id')
+        roster = roster = {int(k): v for k, v in request.data.get('roster', {}).items()}
+
+        if not roster_id:
+            return Response({"error": "roster_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if not roster:
+            return Response({"error": "roster is required"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 1. Fetch AlgoPlan
+        algo_plan = get_object_or_404(AlgoPlan, roster_id=roster_id)
+        scheduling_month = algo_plan.month
+        scheduling_year = algo_plan.year
+        start_date = algo_plan.start_date
+        end_date = algo_plan.end_date
+        
+        # 2. Fetch Teams
+        team_objs = Team.objects.filter(roster_id=roster_id)
+        teams_dict = {}
+        for team in team_objs:
+            teams_dict.setdefault(team.team_id, []).append(team.doctor.name)
+        
+        teams = list(teams_dict.values())
+
+        print([type(team.doctor) for team in team_objs])
+
+        # 3. Build doctor_input_details
+        doctors = WorkHistory.objects.filter(
+            roster_id=algo_plan,
+            doctor__in=[team.doctor for team in team_objs]
+        )
+
+        # Fetch dependents
+        dependent_objs = Dependents.objects.filter(roster_id=roster_id)
+        dependent_map = {dep.doctor.doctor_id: dep for dep in dependent_objs}
+        
+        doctor_input_details = {}
+
+        for doctor in doctors:
+            # Fetch off requests between start_date and end_date
+            off_requests = OffRequest.objects.filter(
+                doctor=doctor.doctor,
+                year=scheduling_year,
+                month=scheduling_month,
+                date__gte=start_date,
+                date__lte=end_date,
+            )
+            off_requested_dates = [off.date for off in off_requests]
+            period_no_of_leaves = len(off_requested_dates)
+
+            dep = dependent_map.get(doctor.doctor.doctor_id)
+
+            doctor_input_details[doctor.doctor.name] = {
+                "total_no_of_shifts": doctor.total_no_of_shifts,
+                "no_of_night_shifts": doctor.no_of_night_shifts,
+                "no_of_day_shifts": doctor.no_of_day_shifts,
+                "no_of_working_sundays": doctor.no_of_working_sundays,
+                "no_of_working_saturday": doctor.no_of_working_saturday,
+                "no_of_leaves": doctor.no_of_leaves,
+                "period_no_of_leaves": period_no_of_leaves,
+                "no_of_consecutive_working_days": doctor.no_of_consecutive_working_days,
+                "no_of_consecutive_night_shifts": doctor.no_of_consecutive_night_shifts,
+                "no_of_consecutive_offs": doctor.no_of_consecutive_offs,
+                "worked_last_shift": doctor.worked_last_shift,
+                "off_requested": off_requested_dates,
+                "dependent": bool(dep),
+                "dep_start": dep.dep_start if dep else 0,
+                "dep_end": dep.dep_end if dep else 0,
+            }
+
+        try:
+            _,doctor_result = check_roster(
+                roster,
+                teams,
+                doctor_input_details,
+                scheduling_month,
+                scheduling_year,
+                start_date,
+                end_date
+            )
+            
+            Roster.objects.filter(roster_id=algo_plan).delete()
+
+            for day, shifts in roster.items():
+                day_shift_doctors = []
+                night_shift_doctors = []
+
+                # Names are given — map back to IDs
+                for doctor_name in shifts.get('day', []):
+                    doc_obj = Doctor.objects.filter(name=doctor_name).first()
+                    if doc_obj:
+                        day_shift_doctors.append(doc_obj.doctor_id)
+                for doctor_name in shifts.get('night', []):
+                    doc_obj = Doctor.objects.filter(name=doctor_name).first()
+                    if doc_obj:
+                        night_shift_doctors.append(doc_obj.doctor_id)
+                
+                Roster.objects.create(
+                    roster_id=algo_plan,
+                    date=day,
+                    day_shift_doctors=day_shift_doctors,
+                    night_shift_doctors=night_shift_doctors,
+                )
+            
+            # 6. Update each doctor model(need to think about this a little bit)
+            latest_plan = WorkHistory.objects.order_by('-roster_id').first()
+            if latest_plan:
+                max_id = latest_plan.roster_id
+            else:
+                max_id = None  # or handle as needed
+            if max_id and roster_id+1<=max_id.roster_id:
+                for doctor_name, updated_data in doctor_result.items():
+                    doc = Doctor.objects.filter(name=doctor_name).first()
+                    algo_plan_1_gt = AlgoPlan.objects.filter(roster_id=roster_id+1).first()
+                    doctor_obj = WorkHistory.objects.filter(roster_id=algo_plan_1_gt).filter(doctor=doc).first()
+                    if doctor_obj:
+                        # update the consecutive values
+                        doctor_obj.no_of_leaves = updated_data.get('no_of_leaves', doctor_obj.no_of_leaves)
+                        doctor_obj.no_of_consecutive_working_days = updated_data.get('no_of_consecutive_working_days', doctor_obj.no_of_consecutive_working_days)
+                        doctor_obj.no_of_consecutive_night_shifts = updated_data.get('no_of_consecutive_night_shifts', doctor_obj.no_of_consecutive_night_shifts)
+                        doctor_obj.no_of_consecutive_offs = updated_data.get('no_of_consecutive_offs', doctor_obj.no_of_consecutive_offs)
+                        doctor_obj.worked_last_shift = updated_data.get('worked_last_shift', doctor_obj.worked_last_shift)
+                        
+                        # Calculate deltas for each attribute
+                        delta_total_no_of_shifts = updated_data.get('total_no_of_shifts', doctor_obj.total_no_of_shifts) - doctor_obj.total_no_of_shifts
+                        delta_no_of_night_shifts = updated_data.get('no_of_night_shifts', doctor_obj.no_of_night_shifts) - doctor_obj.no_of_night_shifts
+                        delta_no_of_day_shifts = updated_data.get('no_of_day_shifts', doctor_obj.no_of_day_shifts) - doctor_obj.no_of_day_shifts
+                        delta_no_of_working_sundays = updated_data.get('no_of_working_sundays', doctor_obj.no_of_working_sundays) - doctor_obj.no_of_working_sundays
+                        delta_no_of_working_saturday = updated_data.get('no_of_working_saturday', doctor_obj.no_of_working_saturday) - doctor_obj.no_of_working_saturday
+
+                        # Apply deltas - add a check to make sure it's not the last period of the month
+                        doctor_obj.total_no_of_shifts += delta_total_no_of_shifts
+                        doctor_obj.no_of_night_shifts += delta_no_of_night_shifts
+                        doctor_obj.no_of_day_shifts += delta_no_of_day_shifts
+                        doctor_obj.no_of_working_sundays += delta_no_of_working_sundays
+                        doctor_obj.no_of_working_saturday += delta_no_of_working_saturday
+
+                        doctor_obj.save()
+
+                    # apply a for loop that applies the delta for all periods in the month
+
+            elif max_id:
+                for doctor_name, updated_data in doctor_result.items():
+                    doctor_obj = Doctor.objects.filter(name=doctor_name).first()
+                    if doctor_obj:
+                        doctor_obj.total_no_of_shifts = updated_data.get('total_no_of_shifts', doctor_obj.total_no_of_shifts)
+                        doctor_obj.no_of_night_shifts = updated_data.get('no_of_night_shifts', doctor_obj.no_of_night_shifts)
+                        doctor_obj.no_of_day_shifts = updated_data.get('no_of_day_shifts', doctor_obj.no_of_day_shifts)
+                        doctor_obj.no_of_working_sundays = updated_data.get('no_of_working_sundays', doctor_obj.no_of_working_sundays)
+                        doctor_obj.no_of_working_saturday = updated_data.get('no_of_working_saturday', doctor_obj.no_of_working_saturday)
+                        doctor_obj.no_of_leaves = updated_data.get('no_of_leaves', doctor_obj.no_of_leaves)
+                        doctor_obj.no_of_consecutive_working_days = updated_data.get('no_of_consecutive_working_days', doctor_obj.no_of_consecutive_working_days)
+                        doctor_obj.no_of_consecutive_night_shifts = updated_data.get('no_of_consecutive_night_shifts', doctor_obj.no_of_consecutive_night_shifts)
+                        doctor_obj.no_of_consecutive_offs = updated_data.get('no_of_consecutive_offs', doctor_obj.no_of_consecutive_offs)
+                        doctor_obj.worked_last_shift = updated_data.get('worked_last_shift', doctor_obj.worked_last_shift)
+                        doctor_obj.save()
+            
+            return Response({"message": "Roster update completed successfully!"}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 class WorkHistoryByRosterIDView(generics.ListAPIView):
     serializer_class = WorkHistorySerializer
 
     def get_queryset(self):
         roster_id = self.kwargs['roster_id']
         return WorkHistory.objects.filter(roster_id=roster_id)
-
 
 @api_view(['POST'])
 def send_otp(request):
