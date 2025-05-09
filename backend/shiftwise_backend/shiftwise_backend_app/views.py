@@ -39,8 +39,8 @@ class AlgoPlanFilterView(generics.ListAPIView):
         three_days_after = current_date + timedelta(days=3)
 
         filtered_plans = AlgoPlan.objects.filter(
-            start_date__gte=three_days_after.day,  
-            end_date__lte=current_date.day         
+            start_date__lte=three_days_after.day,  
+            end_date__gte=current_date.day         
         )
 
         return filtered_plans
