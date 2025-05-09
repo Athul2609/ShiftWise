@@ -14,6 +14,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from django.db.models import F
 
 from .authentication import verify_jwt
 from .models import Doctor, Team, OffRequest, OTP, Roster, AlgoPlan, WorkHistory, Dependents
@@ -21,6 +22,7 @@ from .serializers import DoctorSerializer, TeamSerializer, OffRequestSerializer,
 from .utils import generate_jwt,generate_otp
 
 from datetime import date, datetime, timedelta
+from calendar import monthrange
 
 # Adjusting the system path for algorithm imports
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../algorithm')))
@@ -583,15 +585,42 @@ class RosterUpdateView(APIView):
                         delta_no_of_working_saturday = updated_data.get('no_of_working_saturday', doctor_obj.no_of_working_saturday) - doctor_obj.no_of_working_saturday
 
                         # Apply deltas - add a check to make sure it's not the last period of the month
-                        doctor_obj.total_no_of_shifts += delta_total_no_of_shifts
-                        doctor_obj.no_of_night_shifts += delta_no_of_night_shifts
-                        doctor_obj.no_of_day_shifts += delta_no_of_day_shifts
-                        doctor_obj.no_of_working_sundays += delta_no_of_working_sundays
-                        doctor_obj.no_of_working_saturday += delta_no_of_working_saturday
+                        if algo_plan_1_gt.end_date!=monthrange(scheduling_year, scheduling_month)[1]:
+                            doctor_obj.total_no_of_shifts += delta_total_no_of_shifts
+                            doctor_obj.no_of_night_shifts += delta_no_of_night_shifts
+                            doctor_obj.no_of_day_shifts += delta_no_of_day_shifts
+                            doctor_obj.no_of_working_sundays += delta_no_of_working_sundays
+                            doctor_obj.no_of_working_saturday += delta_no_of_working_saturday
 
                         doctor_obj.save()
 
-                    # apply a for loop that applies the delta for all periods in the month
+                        last_day_of_month = monthrange(scheduling_year, scheduling_month)[1]
+
+                        if algo_plan_1_gt.end_date!=monthrange(scheduling_year, scheduling_month)[1]:
+                            WorkHistory.objects.filter(
+                                roster_id__month=scheduling_month,
+                                roster_id__year=scheduling_year,
+                                roster_id__roster_id__gt=roster_id + 1,
+                                doctor=doc
+                            ).update(
+                                total_no_of_shifts=F('total_no_of_shifts') + delta_total_no_of_shifts,
+                                no_of_night_shifts=F('no_of_night_shifts') + delta_no_of_night_shifts,
+                                no_of_day_shifts=F('no_of_day_shifts') + delta_no_of_day_shifts,
+                                no_of_working_sundays=F('no_of_working_sundays') + delta_no_of_working_sundays,
+                                no_of_working_saturday=F('no_of_working_saturday') + delta_no_of_working_saturday,
+                            )
+
+                            latest_algo_plan = AlgoPlan.objects.order_by('-roster_id').first()
+
+                            if latest_algo_plan.month == scheduling_month:
+                                doc.total_no_of_shifts += delta_total_no_of_shifts
+                                doc.no_of_night_shifts += delta_no_of_night_shifts
+                                doc.no_of_day_shifts += delta_no_of_day_shifts
+                                doc.no_of_working_sundays += delta_no_of_working_sundays
+                                doc.no_of_working_saturday += delta_no_of_working_saturday
+                                doc.save()
+                                
+
 
             elif max_id:
                 for doctor_name, updated_data in doctor_result.items():
