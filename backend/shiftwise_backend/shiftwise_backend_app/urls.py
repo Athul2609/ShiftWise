@@ -26,15 +26,17 @@ from .views import (
     AlgoPlanListView,
     AlgoPlanCreateView,
     AlgoPlanFilterView,
+    AlgoPlanListByIDView,
     WorkHistoryByRosterIDView,
     send_otp, 
     verify_otp,
 )
 
 urlpatterns = [
-    path('algoplan/', AlgoPlanListView.as_view(), name='algoplan-list'), #checked
+    path('algoplan/<int:roster_id>/', AlgoPlanListByIDView.as_view(), name='algoplan-by-id'),
     path('algoplan/create/', AlgoPlanCreateView.as_view(), name='algoplan-create'), #checked
     path('algoplan/filter/', AlgoPlanFilterView.as_view(), name='algoplan-filter'),
+    path('algoplan/', AlgoPlanListView.as_view(), name='algoplan-list'), #checked
     path('doctors/', DoctorListView.as_view(), name='doctor-list'), #checked
     path('doctors/create/', DoctorCreateView.as_view(), name='doctor-create'), #checked
     path('doctors/<int:doctor_id>/', DoctorUpdateView.as_view(), name='doctor-update'), #checked

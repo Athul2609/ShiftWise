@@ -69,6 +69,13 @@ class AlgoPlanListView(generics.ListAPIView):
     queryset = AlgoPlan.objects.all()
     serializer_class = AlgoPlanSerializer
 
+class AlgoPlanListByIDView(generics.ListAPIView):
+    serializer_class = AlgoPlanSerializer
+
+    def get_queryset(self):
+        roster_id = self.kwargs['roster_id']
+        return AlgoPlan.objects.filter(roster_id=roster_id)
+
 class DependentsCreateView(generics.CreateAPIView):
     queryset = Dependents.objects.all()
     serializer_class = DependentsSerializer
