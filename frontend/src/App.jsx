@@ -90,7 +90,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/" element={<ProtectedRoute element={<HomePage />} />} />
           <Route path="/request" element={<ProtectedRoute element={<RequestPage />} />} />
-          <Route path="/manage-team" element={<ProtectedRoute element={<ManageTeam />} requiredRole={1} />} />
+          {/* <Route path="/manage-team" element={<ProtectedRoute element={<ManageTeam />} requiredRole={1} />} /> */}
+          <Route path="/manage-team" element={<ManageTeam />} />
           <Route path="/admin" element={<ProtectedRoute element={<Admin />} requiredRole={2} />} />
         </Routes>
       </Router>
