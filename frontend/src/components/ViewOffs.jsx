@@ -2,7 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../App";
 import { API_BASE_URL } from "../config";
 
-const ITEMS_PER_PAGE = 5;
+const itemsPerPage = 5;
 
 const ViewOffs = () => {
   const { user } = useContext(AuthContext);
@@ -10,6 +10,7 @@ const ViewOffs = () => {
 
   const [offs, setOffs] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage,setItemsPerPage] = useState(5)
 
   useEffect(() => {
     if (!doctor_id) return;
@@ -28,10 +29,10 @@ const ViewOffs = () => {
     fetchOffs();
   }, [doctor_id]);
 
-  const totalPages = Math.ceil(offs.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(offs.length / itemsPerPage);
   const paginatedOffs = offs.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   const handlePageChange = (direction) => {
@@ -41,6 +42,11 @@ const ViewOffs = () => {
       return prev;
     });
   };
+
+  const handleItemsPerPage = (event) => {
+    setCurrentPage(1)
+    return setItemsPerPage(Number(event.target.value))
+  }
 
   return (
     <div className="p-4">
@@ -70,21 +76,37 @@ const ViewOffs = () => {
 
           {/* Pagination Controls */}
           <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => handlePageChange("prev")}
-              disabled={currentPage === 1}
-              className="p-2 bg-[#F5EDED] text-[#6482AD] rounded"            >
-              Previous
-            </button>
-            <span className="mr-2 text-[#F5EDED]">
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              onClick={() => handlePageChange("next")}
-              disabled={currentPage === totalPages}
-              className="p-2 bg-[#F5EDED] text-[#6482AD] rounded"            >
-              Next
-            </button>
+            <div>
+              <label htmlFor="itemsPerPage" className="mr-2 text-[#F5EDED]"></label>
+              <select
+              id="itemsPerPage"
+              value={itemsPerPage}
+              onChange={handleItemsPerPage}
+              className="border p-1 text-[#6482AD] bg-[#F5EDED]"
+              >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={20}>20</option>
+              </select>
+            </div>
+              <span className="mr-2 text-[#F5EDED]">
+                {currentPage} of {totalPages}
+              </span>
+            <div>
+              <button
+                onClick={() => handlePageChange("prev")}
+                disabled={currentPage === 1}
+                className="p-2 bg-[#F5EDED] text-[#6482AD] rounded mx-1"            >
+                &laquo;
+              </button>
+              <button
+                onClick={() => handlePageChange("next")}
+                disabled={currentPage === totalPages}
+                className="p-2 bg-[#F5EDED] text-[#6482AD] rounded"            >
+                &raquo;
+              </button>
+            </div>
           </div>
         </div>
       ) : (
