@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { API_BASE_URL } from "../config";
+import { months, getLastDayOfMonth } from "../utils/utils";
 
-function CreatePeriod({ setLoading }) {
-  const [startDate, setStartDate] = useState(null);
-  const [startMonth, setStartMonth] = useState(null);
-  const [startYear, setStartYear] = useState(null);
-  const [endDate, setEndDate] = useState(null);
-
-  const [error, setError] = useState("");
-  const [successPopup, setSuccessPopup] = useState(false);
+function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage}) {
+  const currentDate = new Date();
+  const [startDate, setStartDate] = useState(currentDate.getDate());
+  const [schedulingMonth, setSchedulingMonth] = useState(currentDate.getMonth() + 1);
+  const [schedulingYear, setSchedulingYear] = useState(currentDate.getFullYear());
+  const [endDate, setEndDate] = useState(currentDate.getDate()+1);
 
   const [teams, setTeams] = useState({ "Team 1": [] });
   const [selectedTeam, setSelectedTeam] = useState("Team 1");
@@ -17,15 +16,9 @@ function CreatePeriod({ setLoading }) {
   const [doctors, setDoctors] = useState([]);
   const [dependents, setDependents] = useState([]);
 
-
   const [rosterId, setRosterId] = useState(null);
   const [manualInput, setManualInput] = useState(false);
 
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
-  const currentDate = new Date();
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -42,8 +35,9 @@ function CreatePeriod({ setLoading }) {
           const nextDate = new Date(max.year, max.month - 1, max.end_date);
           nextDate.setDate(nextDate.getDate() + 1);
           setStartDate(nextDate.getDate());
-          setStartMonth(nextDate.getMonth() + 1);
-          setStartYear(nextDate.getFullYear());
+          setSchedulingMonth(nextDate.getMonth() + 1);
+          setSchedulingYear(nextDate.getFullYear());
+          setEndDate(nextDate.getDate() + 1)
         }
 
         const doctorRes = await fetch(`${API_BASE_URL}/api/doctors/`);
@@ -59,9 +53,6 @@ function CreatePeriod({ setLoading }) {
     fetchInitialData();
   }, [setLoading]);
 
-  const getLastDayOfMonth = (month, year) => {
-    return new Date(year, month, 0).getDate();
-  };
 
   const addTeam = () => {
     const teamId = `Team ${Object.keys(teams).length + 1}`;
@@ -95,8 +86,8 @@ function CreatePeriod({ setLoading }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          month: startMonth,
-          year: startYear,
+          month: schedulingMonth,
+          year: schedulingYear,
           start_date: startDate,
           end_date: endDate,
         }),
@@ -120,6 +111,7 @@ function CreatePeriod({ setLoading }) {
       });
 
       setSuccessPopup(true);
+      setPopUpMessage("Teams sucessfully created!")
     } catch (err) {
       console.error("Error submitting:", err);
       setError("Error submitting teams");
@@ -128,38 +120,29 @@ function CreatePeriod({ setLoading }) {
     }
   };
 
-//   const handleSubmit = async () => {
-//     const validDependents = dependents
-//         .filter((d) => d.dep_start && d.dep_end && d.dep_start <= d.dep_end)
-//         .map((d) => ({
-//         doctor: d.doctorId,
-//         roster_id: rosterId, // replace with actual selected roster ID
-//         dep_start: d.dep_start,
-//         dep_end: d.dep_end,
-//         }));
+  const handleSubmit = async () => {
+    const validDependents = dependents
+        .filter((d) => d.dep_start && d.dep_end && d.dep_start <= d.dep_end)
+        .map((d) => ({
+        doctor: d.doctorId,
+        roster_id: rosterId,
+        dep_start: d.dep_start,
+        dep_end: d.dep_end,
+        }));
 
-//     try {
-//         await fetch("/api/dependents/bulk-create/", {
-//         method: "POST",
-//         headers: {
-//             "Content-Type": "application/json",
-//         },
-//         body: JSON.stringify(validDependents),
-//         });
-
-//         alert("Dependents declared successfully!");
-//     } catch (error) {
-//         console.error("Failed to submit dependents", error);
-//         alert("Error while declaring dependents.");
-//     }
-//     };
-
-
-  const handlePopupClose = () => {
-    setSuccessPopup(false);
-    setError(null);
-    window.location.reload();
+    try {
+        await fetch("/api/dependents/bulk-create/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(validDependents),
+        });
+    } catch (error) {
+        console.error("Failed to submit dependents", error);
+    }
   };
+
 
   return (
     <div className="flex flex-col items-center min-h-screen h-full bg-[#7FA1C3]">
@@ -168,72 +151,81 @@ function CreatePeriod({ setLoading }) {
             {manualInput ? (
             <>
                 <div>
-                <label className="block text-[#F5EDED] font-medium">MONTH</label>
-                <select
-                    value={startMonth || ""}
-                    onChange={(e) => setStartMonth(parseInt(e.target.value))}
-                    className="mt-1 p-2 w-full border rounded-lg"
-                >
-                    {months.map((name, index) => (
-                    <option key={index + 1} value={index + 1}>{name}</option>
-                    ))}
-                </select>
+                  <label className="block text-[#F5EDED] font-medium">Month</label>
+                  <select
+                      value={schedulingMonth || ""}
+                      onChange={(e) => setSchedulingMonth(parseInt(e.target.value))}
+                      className="mt-1 p-2 w-full border rounded-lg"
+                  >
+                      {months.map((name, index) => (
+                      <option key={index + 1} value={index + 1}>{name}</option>
+                      ))}
+                  </select>
                 </div>
                 <div>
-                <label className="block text-[#F5EDED] font-medium">YEAR</label>
-                <input
-                    type="number"
-                    min="1900"
-                    max="2100"
-                    value={startYear || ""}
-                    onChange={(e) => setStartYear(parseInt(e.target.value))}
-                    className="mt-1 p-2 w-full border rounded-lg"
-                />
+                  <label className="block text-[#F5EDED] font-medium">Year</label>
+                  <input
+                      type="number"
+                      min={currentDate.getFullYear()}
+                      max="2100"
+                      value={schedulingYear || ""}
+                      onChange={(e) => setSchedulingYear(parseInt(e.target.value))}
+                      className="mt-1 p-2 w-full border rounded-lg"
+                  />
                 </div>
-                <div>
-                <label className="block text-[#F5EDED] font-medium">Start date</label>
-                <input
-                    type="number"
-                    min="1"
-                    max={getLastDayOfMonth(startMonth, startYear) - 1}
-                    value={startDate || ""}
-                    onChange={(e) => setStartDate(parseInt(e.target.value))}
-                    className="mt-1 p-2 w-full border rounded-lg"
-                />
-                </div>
+                { schedulingMonth && schedulingYear &&
+                  <div>
+                    <label className="block text-[#F5EDED] font-medium">Start date</label>
+                    <select
+                        value={startDate || ""}
+                        onChange={(e) => setStartDate(parseInt(e.target.value))}
+                        className="mt-1 p-2 w-full border rounded-lg"
+                    >
+                      {/* <option value="">Select Start Date</option> */}
+                      {
+                        Array.from({ length: getLastDayOfMonth(schedulingMonth, schedulingYear) - 1 }, (_, i) => i + 1)
+                            .map((date) => (
+                            <option key={date} value={date}>{date}</option>
+                            ))
+                      }
+                    </select>
+                  </div>
+                }
             </>
             ) : (
             <>
                 <div>
-                <label className="block text-[#F5EDED] font-medium">Start Month</label>
-                <p className="text-white border border-white rounded p-2">{months[startMonth - 1]}</p>
+                  <label className="block text-[#F5EDED] font-medium">Month</label>
+                  <p className="text-black bg-white border border-white rounded-lg mt-1 p-2 w-full">{months[schedulingMonth - 1]}</p>
                 </div>
                 <div>
-                <label className="block text-[#F5EDED] font-medium">Start Year</label>
-                <p className="text-white border border-white rounded p-2">{startYear}</p>
+                  <label className="block text-[#F5EDED] font-medium">Year</label>
+                  <p className="text-black bg-white border border-white rounded-lg mt-1 p-2 w-full">{schedulingYear}</p>
                 </div>
                 <div>
-                <label className="block text-[#F5EDED] font-medium">Start Date</label>
-                <p className="text-white border border-white rounded p-2">{startDate}</p>
+                  <label className="block text-[#F5EDED] font-medium">Start Date</label>
+                  <p className="text-black bg-white border border-white rounded-lg mt-1 p-2 w-full">{startDate}</p>
                 </div>
             </>
             )}
-            <div>
-            <label className="block text-[#F5EDED] font-medium">End date</label>
-            <select
-                value={endDate || ""}
-                onChange={(e) => setEndDate(parseInt(e.target.value))}
-                className="mt-1 p-2 w-full border rounded-lg"
-            >
-                <option value="">Select End Date</option>
-                {startDate &&
-                Array.from({ length: getLastDayOfMonth(startMonth, startYear) - startDate }, (_, i) => startDate + 1 + i)
-                    .map((date) => (
-                    <option key={date} value={date}>{date}</option>
-                    ))
-                }
-            </select>
-            </div>
+            { startDate && schedulingMonth && schedulingYear &&
+              <div>
+                <label className="block text-[#F5EDED] font-medium">End date</label>
+                <select
+                    value={endDate || ""}
+                    onChange={(e) => setEndDate(parseInt(e.target.value))}
+                    className="mt-1 p-2 w-full border rounded-lg"
+                >
+                    {/* <option value="">Select End Date</option> */}
+                    {startDate &&
+                    Array.from({ length: getLastDayOfMonth(schedulingMonth, schedulingYear) - startDate }, (_, i) => startDate + 1 + i)
+                        .map((date) => (
+                        <option key={date} value={date}>{date}</option>
+                        ))
+                    }
+                </select>
+              </div>
+            }
         </div>
       </div>
 
@@ -262,7 +254,10 @@ function CreatePeriod({ setLoading }) {
 
         {showDoctorDropdown && (
           <select
-            onChange={(e) => assignDoctor(doctors.find((d) => d.doctor_id === parseInt(e.target.value)))}
+            onChange={(e) => {
+              console.log(doctors)
+              assignDoctor(doctors.find((d) => d.doctor_id === parseInt(e.target.value)))
+            }}
             className="mt-4 p-2 border rounded bg-white"
           >
             <option value="">Select Doctor</option>
@@ -272,6 +267,17 @@ function CreatePeriod({ setLoading }) {
               .map((doc) => (
                 <option key={doc.doctor_id} value={doc.doctor_id}>{doc.name}</option>
               ))}
+              {/* {
+                console.log(doctors
+              .filter((d) => 
+                {
+                  console.log(d.doctor_id)
+                  console.log(assignedDoctors)
+                  console.log(assignedDoctors.has(d.doctor_id))
+                  return assignedDoctors.has(d.doctor_id)
+                })
+              )
+              } */}
           </select>
         )}
 
@@ -282,135 +288,99 @@ function CreatePeriod({ setLoading }) {
         </div>
       </div>
 
-      {/* <h3 className="text-xl font-semibold mt-4 text-white">Declare Dependents</h3>
-    <div className="space-y-4">
-    {doctors.map((doc) => {
-        const existing = dependents.find((d) => d.doctorId === doc.id);
-        const isChecked = !!existing;
+      <h3 className="text-xl font-semibold mt-2 text-[#F5EDED]">Dependents</h3>
+      <div className="space-y-4">
+        {Array.from(assignedDoctors).map((doc) => {
+            const existing = dependents.find((d) => d.doctorId === doc.id);
+            const isChecked = !!existing;
 
-        return (
-        <div key={doc.id} className="p-2 border border-white rounded-lg text-white">
-            <label className="flex items-center gap-2">
-            <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={(e) => {
-                if (e.target.checked) {
-                    setDependents((prev) => [
-                    ...prev,
-                    { doctorId: doc.id, dep_start: null, dep_end: null },
-                    ]);
-                } else {
-                    setDependents((prev) => prev.filter((d) => d.doctorId !== doc.id));
-                }
-                }}
-            />
-            <span>{doc.name}</span>
-            </label>
-
-            {isChecked && (
-            <div className="ml-6 mt-2 flex gap-4">
-                <div>
-                <label className="block text-sm">Dependency Start</label>
-                <select
-                    value={existing?.dep_start || ""}
-                    onChange={(e) =>
-                    setDependents((prev) =>
-                        prev.map((d) =>
-                        d.doctorId === doc.id
-                            ? { ...d, dep_start: parseInt(e.target.value) }
-                            : d
-                        )
-                    )
+            return (
+            <div key={doc.id} className="p-2 border border-white rounded-lg text-white">
+                <label className="flex items-center gap-2">
+                <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={(e) => {
+                    if (e.target.checked) {
+                        setDependents((prev) => [
+                        ...prev,
+                        { doctorId: doc.id, dep_start: null, dep_end: null },
+                        ]);
+                    } else {
+                        setDependents((prev) => prev.filter((d) => d.doctorId !== doc.id));
                     }
-                    className="p-1 rounded text-black"
-                >
-                    <option value="">Select</option>
-                    {Array.from(
-                    { length: (endDate || 0) - (startDate || 0) + 1 },
-                    (_, i) => (startDate || 0) + i
-                    ).map((day) => (
-                    <option key={day} value={day}>
-                        {day}
-                    </option>
-                    ))}
-                </select>
-                </div>
+                    }}
+                />
+                <span>{doctors.filter((d) => d.doctor_id = doc)[0].name}</span>
+                </label>
 
-                <div>
-                <label className="block text-sm">Dependency End</label>
-                <select
-                    value={existing?.dep_end || ""}
-                    onChange={(e) =>
-                    setDependents((prev) =>
-                        prev.map((d) =>
-                        d.doctorId === doc.id
-                            ? { ...d, dep_end: parseInt(e.target.value) }
-                            : d
+                {isChecked && (
+                <div className="ml-6 mt-2 flex gap-4">
+                    <div>
+                    <label className="block text-sm">Dependency Start</label>
+                    <select
+                        value={existing?.dep_start || ""}
+                        onChange={(e) =>
+                        setDependents((prev) =>
+                            prev.map((d) =>
+                            d.doctorId === doc.id
+                                ? { ...d, dep_start: parseInt(e.target.value) }
+                                : d
+                            )
                         )
-                    )
-                    }
-                    className="p-1 rounded text-black"
-                >
-                    <option value="">Select</option>
-                    {Array.from(
-                    { length: (endDate || 0) - (startDate || 0) + 1 },
-                    (_, i) => (startDate || 0) + i
-                    ).map((day) => (
-                    <option key={day} value={day}>
-                        {day}
-                    </option>
-                    ))}
-                </select>
+                        }
+                        className="p-1 rounded text-black"
+                    >
+                        <option value="">Select</option>
+                        {Array.from(
+                        { length: (endDate || 0) - (startDate || 0) + 1 },
+                        (_, i) => (startDate || 0) + i
+                        ).map((day) => (
+                        <option key={day} value={day}>
+                            {day}
+                        </option>
+                        ))}
+                    </select>
+                    </div>
+
+                    <div>
+                    <label className="block text-sm">Dependency End</label>
+                    <select
+                        value={existing?.dep_end || ""}
+                        onChange={(e) =>
+                        setDependents((prev) =>
+                            prev.map((d) =>
+                            d.doctorId === doc.id
+                                ? { ...d, dep_end: parseInt(e.target.value) }
+                                : d
+                            )
+                        )
+                        }
+                        className="p-1 rounded text-black"
+                    >
+                        <option value="">Select</option>
+                        {Array.from(
+                        { length: (endDate || 0) - (startDate || 0) + 1 },
+                        (_, i) => (startDate || 0) + i
+                        ).map((day) => (
+                        <option key={day} value={day}>
+                            {day}
+                        </option>
+                        ))}
+                    </select>
+                    </div>
                 </div>
+                )}
             </div>
-            )}
-        </div>
-        );
-    })}
-    </div> */}
+            );
+        })}
+      </div>
 
       <div className="mt-4">
         <button onClick={submitTeamsFunc} className="px-4 py-2 mb-4 bg-[#6482AD] text-white rounded">
           SUBMIT
         </button>
       </div>
-
-      {/* Loading Spinner */}
-      {/* {setLoading && 
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="flex flex-col items-center">
-            <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
-            <p className="mt-4 text-lg text-white">Loading...</p>
-          </div>
-        </div>
-      } */}
-
-      {/* Error Popup */}
-      {error &&
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
-            <h2 className="text-2xl font-bold text-red-600">Error!</h2>
-            <p>{error}.</p>
-            <button onClick={handlePopupClose} className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]">
-              Close
-            </button>
-          </div>
-        </div>
-      }
-
-      {/* Success Popup */}
-      {successPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-          <div className="bg-white p-6 rounded shadow-lg text-center">
-            <h2 className="text-2xl font-bold text-green-600">Success!</h2>
-            <p>Teams Successfully created.</p>
-            <button onClick={handlePopupClose} className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]">
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

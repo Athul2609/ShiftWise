@@ -3,33 +3,56 @@ import { API_BASE_URL } from "../config";
 import CreatePeriod from "../components/CreatePeriod";
 
 export default function TeamManagement() {
-  const [done,setDone] = useState();
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState("")
   const [successPopup,setSuccessPopup] = useState(false)
+  const [popUpMessage,setPopUpMessage] = useState("")
 
-  const [doctors, setDoctors] = useState([]);
-
-  const currentDate = new Date();
-  const [month,setMonth] = useState(currentDate.getMonth() + 1);
-  const [year,setYear] = useState(currentDate.getFullYear());
-
-  const [teams, setTeams] = useState({ "Team 1": [] });
-
-  const [selectedTeam, setSelectedTeam] = useState("Team 1");
-
-  const [assignedDoctors, setAssignedDoctors] = useState(new Set());
-
-  const [showDoctorDropdown, setShowDoctorDropdown] = useState(false);
-
-
-  const months = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
-  ];
+  const handlePopupClose = () => {
+    setSuccessPopup(false);
+    setError(null);
+    // window.location.reload();
+  };
 
   return(
-    <CreatePeriod setLoading={setLoading} />
+    <div>
+      <CreatePeriod setLoading={setLoading} setError={setError} setSuccessPopup={setSuccessPopup} setPopUpMessage={setPopUpMessage}/>
+      {/* Loading Spinner */}
+      {loading && 
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
+            <p className="mt-4 text-lg text-white">Loading...</p>
+          </div>
+        </div>
+      }
+
+      {/* Error Popup */}
+      {error &&
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-red-600">Error!</h2>
+            <p>{error}.</p>
+            <button onClick={handlePopupClose} className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]">
+              Close
+            </button>
+          </div>
+        </div>
+      }
+
+      {/* Success Popup */}
+      {successPopup && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+          <div className="bg-white p-6 rounded shadow-lg text-center">
+            <h2 className="text-2xl font-bold text-green-600">Success!</h2>
+            <p>{popUpMessage}</p>
+            <button onClick={handlePopupClose} className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]">
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   )
 
 
@@ -211,11 +234,7 @@ export default function TeamManagement() {
   //   }
   // }
 
-  // const handlePopupClose = () => {
-  //   setSuccessPopup(false); // Close the popup
-  //   setError(null);
-  //   window.location.reload();
-  // };
+
   
   // if (!done) 
   //   {
