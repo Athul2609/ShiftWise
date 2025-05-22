@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { API_BASE_URL } from "../config";
 import { months, getLastDayOfMonth } from "../utils/utils";
 
 function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage}) {
+  const renderCount = useRef(0);
+  renderCount.current += 1;
+  console.log("Render count:", renderCount.current);
+
   const currentDate = new Date();
   const [startDate, setStartDate] = useState(currentDate.getDate());
   const [schedulingMonth, setSchedulingMonth] = useState(currentDate.getMonth() + 1);
@@ -16,7 +20,6 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
   const [doctors, setDoctors] = useState([]);
   const [dependents, setDependents] = useState([]);
 
-  const [rosterId, setRosterId] = useState(null);
   const [manualInput, setManualInput] = useState(false);
 
 
@@ -24,14 +27,13 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
     const fetchInitialData = async () => {
       setLoading(true);
       try {
-        const planRes = await fetch(`${API_BASE_URL}/api/algoplan/filter/`);
+        const planRes = await fetch(`${API_BASE_URL}/api/algoplan/`);
         const plans = await planRes.json();
 
         if (!Array.isArray(plans) || plans.length === 0) {
           setManualInput(true);
         } else {
           let max = plans.reduce((a, b) => a.roster_id > b.roster_id ? a : b);
-          setRosterId(max.roster_id);
           const nextDate = new Date(max.year, max.month - 1, max.end_date);
           nextDate.setDate(nextDate.getDate() + 1);
           setStartDate(nextDate.getDate());
@@ -53,6 +55,35 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
     fetchInitialData();
   }, [setLoading]);
 
+  const validateDependents = () => {
+    for (let i = 0; i < dependents.length; i++) {
+      const dep = dependents[i];
+      const label = `Dependent #${i + 1}`;
+
+      if (!dep.doctorId) {
+        setError(`${label}: Doctor is not selected.`);
+        return false;
+      }
+
+      if (dep.dep_start === '' || dep.dep_start === undefined || isNaN(dep.dep_start)) {
+        setError(`${label}: Start day is missing or invalid.`);
+        return false;
+      }
+
+      if (dep.dep_end === '' || dep.dep_end === undefined || isNaN(dep.dep_end)) {
+        setError(`${label}: End day is missing or invalid.`);
+        return false;
+      }
+
+      if (Number(dep.dep_start) >= Number(dep.dep_end)) {
+        setError(`${label}: Start day must be less than end day.`);
+        return false;
+      }
+    }
+
+    setError("");
+    return true;
+  }
 
   const addTeam = () => {
     const teamId = `Team ${Object.keys(teams).length + 1}`;
@@ -81,65 +112,60 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
     setLoading(true);
 
     try {
-      // First create algoplan
-      const planRes = await fetch(`${API_BASE_URL}/api/algoplan/create/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          month: schedulingMonth,
-          year: schedulingYear,
-          start_date: startDate,
-          end_date: endDate,
-        }),
-      });
+      if(validateDependents()){
+        // First create algoplan
+        const planRes = await fetch(`${API_BASE_URL}/api/algoplan/create/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            month: schedulingMonth,
+            year: schedulingYear,
+            start_date: startDate,
+            end_date: endDate,
+          }),
+        });
 
-      const newPlan = await planRes.json();
-      const newRosterId = newPlan.roster_id;
+        const newPlan = await planRes.json();
+        const newRosterId = newPlan.roster_id;
 
-      const formattedTeams = Object.entries(teams).flatMap(([teamId, doctors]) =>
-        doctors.map(({ doctor_id }) => ({
-          team_id: teamId,
-          doctor: doctor_id,
+        const formattedTeams = Object.entries(teams).flatMap(([teamId, doctors]) =>
+          doctors.map(({ doctor_id }) => ({
+            team_id: teamId,
+            doctor: doctor_id,
+            roster_id: newRosterId,
+          }))
+        );
+
+        await fetch(`${API_BASE_URL}/api/teams/create/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(formattedTeams),
+        });
+
+        const validDependents = dependents
+          .map((d) => ({
+          doctor: d.doctorId,
           roster_id: newRosterId,
-        }))
-      );
+          dep_start: d.dep_start,
+          dep_end: d.dep_end,
+          }));
+  
+        await fetch(`${API_BASE_URL}/api/dependents/bulk-create/`, {
+          method: "POST",
+          headers: {
+              "Content-Type": "application/json",
+          },
+          body: JSON.stringify(validDependents),
+        });
+        setSuccessPopup(true);
+        setPopUpMessage("Teams sucessfully created!")
+      }
 
-      await fetch(`${API_BASE_URL}/api/teams/create/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formattedTeams),
-      });
-
-      setSuccessPopup(true);
-      setPopUpMessage("Teams sucessfully created!")
     } catch (err) {
       console.error("Error submitting:", err);
       setError("Error submitting teams");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSubmit = async () => {
-    const validDependents = dependents
-        .filter((d) => d.dep_start && d.dep_end && d.dep_start <= d.dep_end)
-        .map((d) => ({
-        doctor: d.doctorId,
-        roster_id: rosterId,
-        dep_start: d.dep_start,
-        dep_end: d.dep_end,
-        }));
-
-    try {
-        await fetch("/api/dependents/bulk-create/", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-        },
-        body: JSON.stringify(validDependents),
-        });
-    } catch (error) {
-        console.error("Failed to submit dependents", error);
     }
   };
 
@@ -267,17 +293,6 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
               .map((doc) => (
                 <option key={doc.doctor_id} value={doc.doctor_id}>{doc.name}</option>
               ))}
-              {/* {
-                console.log(doctors
-              .filter((d) => 
-                {
-                  console.log(d.doctor_id)
-                  console.log(assignedDoctors)
-                  console.log(assignedDoctors.has(d.doctor_id))
-                  return assignedDoctors.has(d.doctor_id)
-                })
-              )
-              } */}
           </select>
         )}
 
@@ -289,7 +304,89 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
       </div>
 
       <h3 className="text-xl font-semibold mt-2 text-[#F5EDED]">Dependents</h3>
-      <div className="space-y-4">
+      {dependents.map((dep, index) => (
+        <div key={index} className="flex gap-4 items-center my-2">
+          {/* Doctor Select */}
+          <select
+            value={dep.doctorId || ""}
+            onChange={(e) => {
+              const updated = [...dependents];
+              updated[index].doctorId = e.target.value;
+              setDependents(updated);
+            }}
+            className="p-2 border rounded bg-white"
+          >
+            <option value="">Select Doctor</option>
+            {doctors
+              .filter((d) => assignedDoctors.has(d.doctor_id))
+              // .filter((d) => !dependents.filter((dep) => dep.doctorId == d.doctor_id).length)
+              .filter((d) => d.role !== 2)
+              .map((doc) => (
+                <option key={doc.doctor_id} value={doc.doctor_id}>
+                  {doc.name}
+                </option>
+              ))}
+          </select>
+
+          {/* Start Date Select */}
+          <select
+            value={dep.dep_start || ""}
+            onChange={(e) => {
+              const updated = [...dependents];
+              updated[index].dep_start = parseInt(e.target.value);
+              setDependents(updated);
+            }}
+            className="p-2 border rounded bg-white"
+          >
+            <option value="">Start Day</option>
+            {Array.from({ length: endDate - startDate + 1 }, (_, i) => startDate + i).map((date) => (
+              <option key={date} value={date}>
+                {date}
+              </option>
+            ))}
+          </select>
+
+          {/* End Date Select */}
+          <select
+            value={dep.dep_end || ""}
+            onChange={(e) => {
+              const updated = [...dependents];
+              updated[index].dep_end = parseInt(e.target.value);
+              setDependents(updated);
+            }}
+            className="p-2 border rounded bg-white"
+          >
+            <option value="">End Day</option>
+            {Array.from({ length: endDate - startDate + 1 }, (_, i) => startDate + i).map((date) => (
+              <option key={date} value={date}>
+                {date}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={() => {
+              setDependents(dependents.filter((_, i) => i !== index));
+            }}
+            className="text-red-500 hover:text-red-700 font-bold text-lg bg-"
+            title="Delete"
+          >
+            ✕
+          </button>
+        </div>
+      ))
+      }
+
+      {/* + Dependent Button */}
+      <button
+        onClick={() =>
+          setDependents((prev) => [...prev, { doctorId: "", dep_start: "", dep_end: "" }])
+        }
+        className="px-4 py-2 text-[#F5EDED] rounded"
+      >
+        + Dependent
+      </button>
+
+      {/* <div className="space-y-4">
         {Array.from(assignedDoctors).map((doc) => {
             const existing = dependents.find((d) => d.doctorId === doc.id);
             const isChecked = !!existing;
@@ -311,7 +408,7 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
                     }
                     }}
                 />
-                <span>{doctors.filter((d) => d.doctor_id = doc)[0].name}</span>
+                <span>{doctors.filter((d) => d.doctor_id === doc)[0].name}</span>
                 </label>
 
                 {isChecked && (
@@ -374,7 +471,7 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
             </div>
             );
         })}
-      </div>
+      </div> */}
 
       <div className="mt-4">
         <button onClick={submitTeamsFunc} className="px-4 py-2 mb-4 bg-[#6482AD] text-white rounded">

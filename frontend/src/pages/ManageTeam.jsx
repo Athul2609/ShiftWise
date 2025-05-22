@@ -1,22 +1,28 @@
 import { useEffect, useState } from "react";
 import { API_BASE_URL } from "../config";
 import CreatePeriod from "../components/CreatePeriod";
+import ManagePeriod from "../components/ManagePeriod";
 
 export default function TeamManagement() {
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState("")
   const [successPopup,setSuccessPopup] = useState(false)
   const [popUpMessage,setPopUpMessage] = useState("")
+  const [addPeriod,setAddPeriod] = useState(false)
 
   const handlePopupClose = () => {
     setSuccessPopup(false);
+    if(!error)
+    {
+      window.location.reload();
+    }
     setError(null);
-    // window.location.reload();
   };
 
   return(
     <div>
-      <CreatePeriod setLoading={setLoading} setError={setError} setSuccessPopup={setSuccessPopup} setPopUpMessage={setPopUpMessage}/>
+      <ManagePeriod rosterId={1} setError={setError} setLoading={setLoading}/>
+      {/* <CreatePeriod setLoading={setLoading} setError={setError} setSuccessPopup={setSuccessPopup} setPopUpMessage={setPopUpMessage}/> */}
       {/* Loading Spinner */}
       {loading && 
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
