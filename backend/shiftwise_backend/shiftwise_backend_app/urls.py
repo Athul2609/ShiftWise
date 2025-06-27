@@ -8,9 +8,13 @@ from .views import (
     DoctorDeleteView,
     DoctorDetailView,
     DependentsCreateView,
+    DependentsByRosterAPIView,
+    DeleteAllDependentsByRosterAPIView,
     TeamCreateView,
     TeamListView,
     TeamsByRosterView,
+    TeamUpdateByCompositeKeyAPIView,
+    TeamDeleteByCompositeKeyAPIView,
     DeleteTeamsByRosterView,
     OffRequestCreateView, 
     OffRequestListView, 
@@ -43,7 +47,11 @@ urlpatterns = [
     path('doctors/delete/<int:doctor_id>/', DoctorDeleteView.as_view(), name='doctor-delete'), #checked
     path('doctor/<int:doctor_id>/', DoctorDetailView.as_view(), name='doctor-detail'), #checked
     path('dependents/bulk-create/', DependentsCreateView.as_view(), name='dependents-bulk-create'), #checked
+    path('dependents/<int:roster_id>/', DependentsByRosterAPIView.as_view(), name='dependents-by-roster'),
+    path('dependents/<int:roster_id>/delete-all/', DeleteAllDependentsByRosterAPIView.as_view(), name='delete-all-dependents-by-roster'),
     path('teams/create/', TeamCreateView.as_view(), name='team-create'), #checked
+    path('teams/update/<int:roster_id>/<int:doctor_id>/', TeamUpdateByCompositeKeyAPIView.as_view(), name='team-update'),
+    path('teams/delete/<int:roster_id>/<int:doctor_id>/', TeamDeleteByCompositeKeyAPIView.as_view(), name='team-delete'),
     path('teams/delete/<int:roster_id>/', DeleteTeamsByRosterView.as_view(), name='delete-teams-by-roster'), #checked
     path('teams/<int:roster_id>/', TeamsByRosterView.as_view(), name='teams-by-roster'), #checked
     path('teams/', TeamListView.as_view(), name='team-list'), #checked

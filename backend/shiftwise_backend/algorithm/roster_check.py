@@ -110,7 +110,7 @@ def check(roster, teams, doctor_input_details, scheduling_month, scheduling_year
                     else:
                         team_str = ', '.join(team[:-1]) + ' and ' + team[-1]
                     # Then build your message
-                    message += f"No doctor in the team consisting of doctors {team_str} is working on {shift} of {day}/{scheduling_month}/{scheduling_year}.\n"
+                    message += f"No eligible doctor in the team consisting of doctors {team_str} is working on {shift} of {day}/{scheduling_month}/{scheduling_year}.\n"
                 non_dep_doc=len(eligible_list)
                 for doctor in eligible_list:
                     if docs_info[doctor]["dependent"] and day in range(docs_info[doctor]["dep_start"],docs_info[doctor]["dep_end"]+1):

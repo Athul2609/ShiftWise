@@ -110,7 +110,9 @@ def create_stage_two_roster(teams, off_requests,scheduling_month, start_date, en
         for team in teams:
             for doctor in team:
                 if not verify_min_shift_criteria(docs_info[doctor], start_date, end_date, scheduling_month, scheduling_year):
-                    doc_working_options[doctor]=generate_working_options(doctor,docs_info_history[doctor],docs_info[doctor],roster,scheduling_month,scheduling_year,start_date, end_date)
+                    working_options = generate_working_options(doctor,docs_info_history[doctor],docs_info[doctor],roster,scheduling_month,scheduling_year,start_date, end_date)
+                    if(len(working_options)):
+                        doc_working_options[doctor]=working_options
         doc_working_options = dict(sorted(doc_working_options.items(), key=lambda item: len(item[1])))
         for doctor in doc_working_options:
             number_of_rep=0
@@ -118,9 +120,6 @@ def create_stage_two_roster(teams, off_requests,scheduling_month, start_date, en
                 number_of_rep+=1
                 dates_with_extra_doctor[number_of_rep]=[]
                 option_set=[]
-                if len(doc_working_options[doctor]) == 0:
-                    del doc_working_options[doctor]
-                    continue
                 for i in doc_working_options[doctor]:
                     if i not in dates_with_extra_doctor[number_of_rep]:
                         option_set.append(i)

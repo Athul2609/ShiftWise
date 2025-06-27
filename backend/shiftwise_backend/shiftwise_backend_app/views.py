@@ -12,6 +12,7 @@ from django.utils import timezone
 from rest_framework import generics, status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework.exceptions import NotFound
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
 from django.db.models import F
@@ -28,20 +29,68 @@ from calendar import monthrange
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../algorithm')))
 from main import generate_roster, check_roster
 
+from rest_framework import generics
+from datetime import datetime, timedelta
+from .models import AlgoPlan
+from .serializers import AlgoPlanSerializer
+from django.db.models import Q
+
 class AlgoPlanFilterView(generics.ListAPIView):
     serializer_class = AlgoPlanSerializer
 
     def get_queryset(self):
-        # Get the current date
         current_date = datetime.now().date()
-
-        # Calculate the date 3 days after today
         three_days_after = current_date + timedelta(days=3)
 
-        filtered_plans = AlgoPlan.objects.filter(
-            start_date__lte=three_days_after.day,  
-            end_date__gte=current_date.day         
-        )
+        current_day = current_date.day
+        end_day = three_days_after.day
+        current_month = current_date.month
+        end_month = three_days_after.month
+        current_year = current_date.year
+        end_year = three_days_after.year
+
+        # Handle single month/year or cross-month/year filtering
+        if current_year == end_year:
+            if current_month == end_month:
+                # Same month and year
+                filtered_plans = AlgoPlan.objects.filter(
+                    start_date__lte=end_day,
+                    end_date__gte=current_day,
+                    month=current_month,
+                    year=current_year
+                )
+            else:
+                # Cross month within the same year
+                filtered_plans = AlgoPlan.objects.filter(
+                    Q(
+                        month=current_month,
+                        year=current_year,
+                        start_date__lte=end_day,
+                        end_date__gte=current_day,
+                    ) |
+                    Q(
+                        month=end_month,
+                        year=current_year,
+                        start_date__lte=end_day,
+                        end_date__gte=current_day,
+                    )
+                )
+        else:   
+            # Cross into a new year
+            filtered_plans = AlgoPlan.objects.filter(
+                Q(
+                    month=current_month,
+                    start_date__lte=end_day,
+                    end_date__gte=current_day,
+                    year=current_year,
+                ) |
+                Q(
+                    month=end_month,
+                    start_date__lte=end_day,
+                    end_date__gte=current_day,
+                    year=end_year,
+                )
+            )
 
         return filtered_plans
     
@@ -89,6 +138,21 @@ class DependentsCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
+
+class DependentsByRosterAPIView(generics.ListAPIView):
+    serializer_class = DependentsSerializer
+
+    def get_queryset(self):
+        roster_id = self.kwargs['roster_id']
+        return Dependents.objects.filter(roster_id=roster_id)
+
+class DeleteAllDependentsByRosterAPIView(APIView):
+    def delete(self, request, roster_id):
+        deleted_count, _ = Dependents.objects.filter(roster_id=roster_id).delete()
+        return Response(
+            {"message": f"Deleted {deleted_count} dependents for roster_id {roster_id}."},
+            status=status.HTTP_200_OK
+        )
 
 # API to create a new doctor
 class DoctorCreateView(generics.CreateAPIView):
@@ -140,6 +204,31 @@ class TeamsByRosterView(generics.ListAPIView):
     def get_queryset(self):
         roster_id = self.kwargs['roster_id']
         return Team.objects.filter(roster_id=roster_id)
+
+class TeamUpdateByCompositeKeyAPIView(generics.UpdateAPIView):
+    serializer_class = TeamSerializer
+
+    def get_queryset(self):
+        return Team.objects.all()
+
+    def get_object(self):
+        doctor_id = self.kwargs['doctor_id']
+        roster_id = self.kwargs['roster_id']
+        return Team.objects.get(doctor_id=doctor_id, roster_id=roster_id)
+
+class TeamDeleteByCompositeKeyAPIView(generics.DestroyAPIView):
+    serializer_class = TeamSerializer
+
+    def get_queryset(self):
+        return Team.objects.all()
+
+    def get_object(self):
+        doctor_id = self.kwargs['doctor_id']
+        roster_id = self.kwargs['roster_id']
+        try:
+            return Team.objects.get(doctor_id=doctor_id, roster_id=roster_id)
+        except Team.DoesNotExist:
+            raise NotFound(detail="Team not found for given doctor and roster.")
 
 class DeleteTeamsByRosterView(APIView):
     def delete(self, request, roster_id):
@@ -280,7 +369,6 @@ class RosterView(APIView):
                 "dep_start": dep.dep_start if dep else 0,
                 "dep_end": dep.dep_end if dep else 0,
             }
-
         # 4. Call generate_roster
         try:
             roster_result, doctor_result = generate_roster(
@@ -433,7 +521,15 @@ class RosterGenerationCheckView(APIView):
                 "dep_start": dep.dep_start if dep else 0,
                 "dep_end": dep.dep_end if dep else 0,
             }
-        print(doctor_input_details)
+        print(
+                roster,
+                teams,
+                doctor_input_details,
+                scheduling_month,
+                scheduling_year,
+                start_date,
+                end_date
+            )
 
         try:
             message,_ = check_roster(
