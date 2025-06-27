@@ -581,14 +581,12 @@ class RosterUpdateView(APIView):
         
         teams = list(teams_dict.values())
 
-        print([type(team.doctor) for team in team_objs])
 
         # 3. Build doctor_input_details
         doctors = WorkHistory.objects.filter(
             roster_id=algo_plan,
             doctor__in=[team.doctor for team in team_objs]
-        )
-
+        ) #fetch from Doctor if not present and also add it WorkHistory
         # Fetch dependents
         dependent_objs = Dependents.objects.filter(roster_id=roster_id)
         dependent_map = {dep.doctor.doctor_id: dep for dep in dependent_objs}
@@ -722,19 +720,23 @@ class RosterUpdateView(APIView):
                                 doc.no_of_working_sundays += delta_no_of_working_sundays
                                 doc.no_of_working_saturday += delta_no_of_working_saturday
                                 doc.save()
-                                
+                    else:
+                        # need to write the logic where if it's not the gt WH and no entry in WH+1 then we need to create a row for that doctor, with default values over there 
+                        pass       
 
 
             elif max_id:
                 for doctor_name, updated_data in doctor_result.items():
+                    latest_algo_plan = AlgoPlan.objects.order_by('-roster_id').first()
                     doctor_obj = Doctor.objects.filter(name=doctor_name).first()
                     if doctor_obj:
-                        doctor_obj.total_no_of_shifts = updated_data.get('total_no_of_shifts', doctor_obj.total_no_of_shifts)
-                        doctor_obj.no_of_night_shifts = updated_data.get('no_of_night_shifts', doctor_obj.no_of_night_shifts)
-                        doctor_obj.no_of_day_shifts = updated_data.get('no_of_day_shifts', doctor_obj.no_of_day_shifts)
-                        doctor_obj.no_of_working_sundays = updated_data.get('no_of_working_sundays', doctor_obj.no_of_working_sundays)
-                        doctor_obj.no_of_working_saturday = updated_data.get('no_of_working_saturday', doctor_obj.no_of_working_saturday)
-                        doctor_obj.no_of_leaves = updated_data.get('no_of_leaves', doctor_obj.no_of_leaves)
+                        if latest_algo_plan.month == scheduling_month:
+                            doctor_obj.total_no_of_shifts = updated_data.get('total_no_of_shifts', doctor_obj.total_no_of_shifts)
+                            doctor_obj.no_of_night_shifts = updated_data.get('no_of_night_shifts', doctor_obj.no_of_night_shifts)
+                            doctor_obj.no_of_day_shifts = updated_data.get('no_of_day_shifts', doctor_obj.no_of_day_shifts)
+                            doctor_obj.no_of_working_sundays = updated_data.get('no_of_working_sundays', doctor_obj.no_of_working_sundays)
+                            doctor_obj.no_of_working_saturday = updated_data.get('no_of_working_saturday', doctor_obj.no_of_working_saturday)
+                            doctor_obj.no_of_leaves = updated_data.get('no_of_leaves', doctor_obj.no_of_leaves)
                         doctor_obj.no_of_consecutive_working_days = updated_data.get('no_of_consecutive_working_days', doctor_obj.no_of_consecutive_working_days)
                         doctor_obj.no_of_consecutive_night_shifts = updated_data.get('no_of_consecutive_night_shifts', doctor_obj.no_of_consecutive_night_shifts)
                         doctor_obj.no_of_consecutive_offs = updated_data.get('no_of_consecutive_offs', doctor_obj.no_of_consecutive_offs)
