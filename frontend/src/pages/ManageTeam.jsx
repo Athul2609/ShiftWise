@@ -4,47 +4,94 @@ import CreatePeriod from "../components/CreatePeriod";
 import ManagePeriod from "../components/ManagePeriod";
 
 export default function TeamManagement() {
-  const [loading,setLoading] = useState(false);
-  const [error,setError] = useState("")
-  const [successPopup,setSuccessPopup] = useState(false)
-  const [popUpMessage,setPopUpMessage] = useState("")
-  const [addPeriod,setAddPeriod] = useState(false)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [successPopup, setSuccessPopup] = useState(false);
+  const [popUpMessage, setPopUpMessage] = useState("");
+  const [rosters, setRosters] = useState([]);
+  const [showCreatePeriod, setShowCreatePeriod] = useState(false)
+
+  useEffect(() => {
+    const fetchRosters = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/algoplan/filter/`);
+        if (!response.ok) {
+          throw new Error("Failed to fetch roster data.");
+        }
+
+        const data = await response.json();
+        setRosters(data);
+
+        if (data.length > 0) {
+          const rosterResponse = await fetch(`${API_BASE_URL}/api/roster/${data[0].roster_id}/`);
+          if (!rosterResponse.ok) {
+            throw new Error("Failed to fetch detailed roster info.");
+          }
+
+          const rosterDetails = await rosterResponse.json();
+          if (rosterDetails.length) {
+            setShowCreatePeriod(true);
+          }
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRosters();
+  }, []);
+
 
   const handlePopupClose = () => {
     setSuccessPopup(false);
-    if(!error)
-    {
+    if (!error) {
       window.location.reload();
     }
     setError(null);
   };
 
-  return(
-    <div>
-      <ManagePeriod rosterId={1} setError={setError} setLoading={setLoading}/>
-      {/* <CreatePeriod setLoading={setLoading} setError={setError} setSuccessPopup={setSuccessPopup} setPopUpMessage={setPopUpMessage}/> */}
+  return (
+    <div className="flex flex-col items-center min-h-screen h-full bg-[#7FA1C3]">
+      {rosters.map((roster) => (
+        <ManagePeriod
+          key={roster.roster_id}
+          rosterId={roster.roster_id}
+          setError={setError}
+          setLoading={setLoading}
+          setPopUpMessage={setPopUpMessage}
+          setSuccessPopup={setSuccessPopup}
+        />
+      ))}
+      {showCreatePeriod && <CreatePeriod setLoading={setLoading} setError={setError} setSuccessPopup={setSuccessPopup} setPopUpMessage={setPopUpMessage}/>}
+
       {/* Loading Spinner */}
-      {loading && 
+      {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="flex flex-col items-center">
             <div className="w-16 h-16 border-4 border-blue-500 border-dashed rounded-full animate-spin"></div>
             <p className="mt-4 text-lg text-white">Loading...</p>
           </div>
         </div>
-      }
+      )}
 
       {/* Error Popup */}
-      {error &&
+      {error && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h2 className="text-2xl font-bold text-red-600">Error!</h2>
-            <p>{error}.</p>
-            <button onClick={handlePopupClose} className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]">
+            <p>{error}</p>
+            <button
+              onClick={handlePopupClose}
+              className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+            >
               Close
             </button>
           </div>
         </div>
-      }
+      )}
 
       {/* Success Popup */}
       {successPopup && (
@@ -52,14 +99,18 @@ export default function TeamManagement() {
           <div className="bg-white p-6 rounded shadow-lg text-center">
             <h2 className="text-2xl font-bold text-green-600">Success!</h2>
             <p>{popUpMessage}</p>
-            <button onClick={handlePopupClose} className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]">
+            <button
+              onClick={handlePopupClose}
+              className="mt-4 bg-[#6482AD] text-white px-4 py-2 rounded hover:bg-[#506a8e]"
+            >
               Close
             </button>
           </div>
         </div>
       )}
     </div>
-  )
+  );
+
 
 
   // useEffect(() => {

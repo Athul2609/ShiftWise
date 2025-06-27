@@ -229,6 +229,11 @@ export default function RosterTable() {
                               if (!teamMap[teamId]) teamMap[teamId] = [];
                               teamMap[teamId].push(doctorIdToName[doctorId] || doctorId);
                           });
+                          teams.forEach((t) => {
+                              if (!(t.team_id in teamMap)) {
+                                  teamMap[t.team_id] = [""];
+                              }
+                          });
                           return Object.values(teamMap).map((team) => team.join(", "));
                       };
 

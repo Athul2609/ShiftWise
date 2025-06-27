@@ -86,7 +86,7 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
   }
 
   const addTeam = () => {
-    const teamId = `Team ${Object.keys(teams).length + 1}`;
+    const teamId = `T${Object.keys(teams).length + 1}`;
     setTeams({ ...teams, [teamId]: [] });
   };
 
@@ -171,7 +171,10 @@ function CreatePeriod({ setLoading, setError, setSuccessPopup, setPopUpMessage})
 
 
   return (
-    <div className="flex flex-col items-center min-h-screen h-full bg-[#7FA1C3]">
+    <div className="flex flex-col items-center p-4 border shadow-2xl border-[#6482AD] rounded-lg w-[80%] mt-10 mb-5">
+      <h2 className="text-3xl font-bold mb-4 text-[#F5EDED]">
+        Create Period
+      </h2>
       <div className="p-4 rounded-xl border-none">
         <div className="flex flex-col space-y-4 p-4 max-w-sm mx-auto">
             {manualInput ? (

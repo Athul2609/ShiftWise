@@ -92,7 +92,8 @@ function App() {
           <Route path="/request" element={<ProtectedRoute element={<RequestPage />} />} />
           {/* <Route path="/manage-team" element={<ProtectedRoute element={<ManageTeam />} requiredRole={1} />} /> */}
           <Route path="/manage-team" element={<ManageTeam />} />
-          <Route path="/admin" element={<ProtectedRoute element={<Admin />} requiredRole={2} />} />
+          {/* <Route path="/admin" element={<ProtectedRoute element={<Admin />} requiredRole={2} />} /> */}
+          <Route path="/admin" element={<Admin />} />
         </Routes>
       </Router>
     </AuthProvider>
